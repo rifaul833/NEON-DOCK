@@ -7,8 +7,8 @@ __MACOSX/
 **/.DS_Store
 ._*
 
-# Build / cache / local tooling
-.wrangler/
+/public/
+
 **/.wrangler/
 .vinext/
 **/.vinext/

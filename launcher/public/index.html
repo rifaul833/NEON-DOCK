@@ -581,6 +581,8 @@
       frame.src = url;
     }
 
+    let localApi = false;
+
     async function playGame(id) {
       const game = games.get(id);
       if (!game || launching) return;
@@ -590,7 +592,6 @@
       game._launching = true;
       patchCard(id);
 
-      // mark others as not launching
       for (const [gid, g] of games) {
         if (gid !== id) {
           g._launching = false;
@@ -602,16 +603,29 @@
       openStage(game.title);
       loader.classList.add("show");
       loaderTitle.textContent = `Starting ${game.title}…`;
+      document.getElementById("loader-sub").textContent = "First boot can take up to a minute";
       frame.src = "about:blank";
 
       try {
-        const res = await fetch(`/api/games/${id}/play`, { method: "POST" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Could not start game");
+        let url = null;
+
+        if (localApi) {
+          const res = await fetch(`/api/games/${id}/play`, { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not start game");
+          url = data.url;
+        } else if (game.playUrl) {
+          url = game.playUrl;
+        } else {
+          throw new Error(
+            `${game.title} needs the local NEON DOCK app (./launch.sh). On Vercel only Highway Racing is playable for now.`,
+          );
+        }
+
         if (token !== playToken) return;
 
         game.status = "running";
-        game.url = data.url;
+        game.url = url;
         game.active = true;
         game._launching = false;
         for (const [gid, g] of games) {
@@ -622,7 +636,7 @@
           }
         }
         renderGrid();
-        showGame(data.url);
+        showGame(url);
       } catch (err) {
         if (token !== playToken) return;
         game._launching = false;
@@ -657,7 +671,10 @@
     document.getElementById("surprise").addEventListener("click", () => {
       const list = [...games.values()];
       if (!list.length) return;
-      const pick = list[Math.floor(Math.random() * list.length)];
+      // Prefer playable games on static hosting
+      const playable = list.filter((g) => localApi || g.playUrl);
+      const pool = playable.length ? playable : list;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
       playGame(pick.id);
     });
 
@@ -665,7 +682,7 @@
       playToken += 1;
       launching = false;
       closeStage();
-      refreshQuiet();
+      if (localApi) refreshQuiet();
     });
 
     document.getElementById("open-tab").addEventListener("click", () => {
@@ -678,15 +695,38 @@
       }
     });
 
+    async function loadStaticCatalog() {
+      const res = await fetch("/games.json");
+      if (!res.ok) throw new Error("Missing games.json");
+      const data = await res.json();
+      for (const g of data.games || []) {
+        games.set(g.id, {
+          ...g,
+          status: "stopped",
+          url: null,
+          active: false,
+        });
+      }
+      localApi = false;
+    }
+
     async function boot() {
       renderFilters();
-      const res = await fetch("/api/games");
-      const data = await res.json();
-      for (const g of data.games || []) games.set(g.id, g);
+      try {
+        const res = await fetch("/api/games");
+        if (!res.ok) throw new Error("no api");
+        const data = await res.json();
+        for (const g of data.games || []) games.set(g.id, g);
+        localApi = true;
+      } catch {
+        await loadStaticCatalog();
+      }
       renderGrid();
     }
 
-    boot();
+    boot().catch((err) => {
+      showToast(err.message || "Could not load games", true);
+    });
   </script>
 </body>
 </html>

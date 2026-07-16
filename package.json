@@ -1,11 +1,13 @@
 {
-  "name": "first-10-launcher",
+  "name": "neon-dock",
   "private": true,
   "version": "1.0.0",
-  "description": "Game launcher for FIRST_10 collection",
+  "description": "NEON DOCK — local browser game launcher",
   "type": "module",
   "scripts": {
     "start": "node launcher/server.mjs",
-    "launcher": "node launcher/server.mjs"
+    "launcher": "node launcher/server.mjs",
+    "build": "node scripts/vercel-build.mjs",
+    "vercel-build": "node scripts/vercel-build.mjs"
   }
 }

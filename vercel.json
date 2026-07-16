@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo skip-install",
+  "buildCommand": "node scripts/vercel-build.mjs",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/games/racer", "destination": "/games/racer/v4.final.html" }
+  ]
+}
