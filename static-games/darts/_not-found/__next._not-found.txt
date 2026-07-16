@@ -2,4 +2,4 @@
 2:I[86532,["/games/darts/_next/static/chunks/04h01r3d_t37z.js"],"default"]
 3:I[19580,["/games/darts/_next/static/chunks/04h01r3d_t37z.js"],"default"]
 4:[]
-0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"v1z8K6909K6U6K9iVGBi9"}
+0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"DTvgk2UhF6wbDdXvaM33h"}

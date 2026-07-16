@@ -2,4 +2,4 @@
 2:I[21714,["/games/candyblast/_next/static/chunks/161dvqd93llzu.js"],"default"]
 3:I[70657,["/games/candyblast/_next/static/chunks/161dvqd93llzu.js"],"default"]
 4:[]
-0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"KwHsTe21BRgNzviIqyQSt"}
+0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"YPMxLpgMXDbgThFM-Jtm6"}

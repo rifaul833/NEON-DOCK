@@ -2,4 +2,4 @@
 2:I[34806,["/games/racingbike/_next/static/chunks/0mgl6t-uda06..js"],"default"]
 3:I[42757,["/games/racingbike/_next/static/chunks/0mgl6t-uda06..js"],"default"]
 4:[]
-0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"0MyQV2I_lnAi7SxnsOmSL"}
+0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"--XBE7FYDPhJzhtcytYQo"}

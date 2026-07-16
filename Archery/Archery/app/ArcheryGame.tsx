@@ -10,12 +10,14 @@ type RoomMessage = { type: "hello" | "shot" | "restart"; name: string; score: nu
 const MAX_ARROWS = 8;
 const MAX_LEVEL = 5;
 const HITS_PER_LEVEL = 4;
+/** Empty for local vinext; `/games/archery` when statically exported for Vercel. */
+const ASSET_BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const RANGE_BACKDROPS: Record<string, string> = {
-  "DESERT SUNSET": "/desert-sunset.jpg",
-  "WINTER PEAKS": "/winter-peaks.avif",
-  "DREAMY HIGHLANDS": "/dreamy-landscape.avif",
-  "CARTOON COAST": "/cartoon-ocean.avif",
-  "FANTASY ISLAND": "/fantasy-island.png",
+  "DESERT SUNSET": `${ASSET_BASE}/desert-sunset.jpg`,
+  "WINTER PEAKS": `${ASSET_BASE}/winter-peaks.avif`,
+  "DREAMY HIGHLANDS": `${ASSET_BASE}/dreamy-landscape.avif`,
+  "CARTOON COAST": `${ASSET_BASE}/cartoon-ocean.avif`,
+  "FANTASY ISLAND": `${ASSET_BASE}/fantasy-island.png`,
 };
 
 function makeRoomCode() {

@@ -142,6 +142,8 @@ function buildGame(game) {
       env: {
         ...process.env,
         NEXT_TELEMETRY_DISABLED: "1",
+        // Inlined into client bundles so public/ assets resolve under basePath.
+        NEXT_PUBLIC_BASE_PATH: basePath,
       },
     });
     if (result.status !== 0) {
