@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[52769,["/games/archery/_next/static/chunks/0wmu.7e~i_f5r.js"],"ViewportBoundary"]
+3:I[52769,["/games/archery/_next/static/chunks/0wmu.7e~i_f5r.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+5:I[5678,["/games/archery/_next/static/chunks/0wmu.7e~i_f5r.js"],"IconMark"]
+0:{"rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Arrowfall — 3D Archery"}],["$","meta","1",{"name":"description","content":"A cinematic multiplayer archery challenge built for the browser."}],["$","link","2",{"rel":"shortcut icon","href":"/favicon.svg"}],["$","link","3",{"rel":"icon","href":"/favicon.svg"}],["$","$L5","4",{}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"mx17EJzUR5OBaIic1nWAU"}

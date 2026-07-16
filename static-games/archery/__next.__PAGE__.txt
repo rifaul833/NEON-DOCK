@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[1084,["/games/archery/_next/static/chunks/0wmu.7e~i_f5r.js","/games/archery/_next/static/chunks/0g6pcwi9cvnol.js"],"default"]
+3:I[52769,["/games/archery/_next/static/chunks/0wmu.7e~i_f5r.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/games/archery/_next/static/chunks/0g6pcwi9cvnol.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"mx17EJzUR5OBaIic1nWAU"}
+5:null

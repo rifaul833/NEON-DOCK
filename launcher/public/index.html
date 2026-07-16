@@ -617,9 +617,7 @@
         } else if (game.playUrl) {
           url = game.playUrl;
         } else {
-          throw new Error(
-            `${game.title} needs the local NEON DOCK app (./launch.sh). On Vercel only Highway Racing is playable for now.`,
-          );
+          throw new Error(`${game.title} is not available in this build.`);
         }
 
         if (token !== playToken) return;

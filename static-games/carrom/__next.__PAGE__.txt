@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[59823,["/games/carrom/_next/static/chunks/0gw~e~idcvonz.js","/games/carrom/_next/static/chunks/0a3yucmtmtws0.js"],"CarromGame"]
+3:I[23390,["/games/carrom/_next/static/chunks/0gw~e~idcvonz.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/games/carrom/_next/static/chunks/0a3yucmtmtws0.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"RJ2WhYGqf6AquzI5YgD3b"}
+5:null

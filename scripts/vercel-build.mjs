@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Builds a static site for Vercel from the local NEON DOCK launcher.
- * Vinext games need the local Node launcher; Highway Racing is included as static files.
+ * Builds a static site for Vercel from the local NEON DOCK launcher
+ * plus prebuilt static game exports in static-games/.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUT = path.join(ROOT, "public");
+const STATIC_GAMES = path.join(ROOT, "static-games");
 
 function rmrf(p) {
   fs.rmSync(p, { recursive: true, force: true });
@@ -36,8 +37,20 @@ mkdirp(OUT);
 // Launcher UI + covers
 copyDir(path.join(ROOT, "launcher", "public"), OUT);
 
-// Static Highway Racing game
+// Highway Racing (already static HTML)
 copyDir(path.join(ROOT, "javascript-racer"), path.join(OUT, "games", "racer"));
+
+// Prebuilt Next static exports
+if (!fs.existsSync(STATIC_GAMES)) {
+  console.error("Missing static-games/. Run: node scripts/build-static-games.mjs");
+  process.exit(1);
+}
+for (const id of fs.readdirSync(STATIC_GAMES)) {
+  const src = path.join(STATIC_GAMES, id);
+  if (!fs.statSync(src).isDirectory()) continue;
+  copyDir(src, path.join(OUT, "games", id));
+  console.log(`packed game: ${id}`);
+}
 
 const catalog = [
   {
@@ -48,8 +61,7 @@ const catalog = [
     controls: "Mouse / Touch",
     accent: "#e8a54b",
     cover: "/covers/archery.jpg",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/archery/",
   },
   {
     id: "candyblast",
@@ -59,8 +71,7 @@ const catalog = [
     controls: "Mouse / Touch",
     accent: "#ff6b9d",
     cover: "/covers/candyblast.png",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/candyblast/",
   },
   {
     id: "carrom",
@@ -70,8 +81,7 @@ const catalog = [
     controls: "Mouse / Touch",
     accent: "#f0c14b",
     cover: "/covers/carrom.png",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/carrom/",
   },
   {
     id: "darts",
@@ -81,8 +91,7 @@ const catalog = [
     controls: "Mouse / Touch",
     accent: "#ff5a5a",
     cover: "/covers/darts.png",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/darts/",
   },
   {
     id: "pool",
@@ -92,8 +101,7 @@ const catalog = [
     controls: "Mouse / Touch",
     accent: "#3ecf8e",
     cover: "/covers/pool.png",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/pool/",
   },
   {
     id: "snakes",
@@ -103,8 +111,7 @@ const catalog = [
     controls: "Mouse / Touch",
     accent: "#5ad4ff",
     cover: "/covers/snakes.png",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/snakes/",
   },
   {
     id: "racer",
@@ -115,7 +122,6 @@ const catalog = [
     accent: "#7cffb2",
     cover: "/covers/highway.png",
     playUrl: "/games/racer/v4.final.html",
-    localOnly: false,
   },
   {
     id: "ludo",
@@ -125,8 +131,7 @@ const catalog = [
     controls: "Mouse / Touch",
     accent: "#ffb347",
     cover: "/covers/ludo.png",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/ludo/",
   },
   {
     id: "racingbike",
@@ -136,12 +141,10 @@ const catalog = [
     controls: "Arrows / A D",
     accent: "#ff8a3d",
     cover: "/covers/cycling.png",
-    playUrl: null,
-    localOnly: true,
+    playUrl: "/games/racingbike/",
   },
 ];
 
-// Copy game cover assets that live outside launcher/public/covers
 const extraCovers = [
   ["Archery/Archery/public/desert-sunset.jpg", "covers/archery.jpg"],
   ["CandyBlast/CandyBlast/public/og.png", "covers/candyblast.png"],
@@ -159,4 +162,4 @@ for (const [srcRel, destRel] of extraCovers) {
 
 fs.writeFileSync(path.join(OUT, "games.json"), JSON.stringify({ games: catalog }, null, 2));
 console.log(`Vercel static build ready → ${OUT}`);
-console.log(`Games in catalog: ${catalog.length}`);
+console.log(`Playable games: ${catalog.filter((g) => g.playUrl).length}`);
