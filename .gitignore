@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# macOS junk from zip extracts
+__MACOSX/
+**/.DS_Store
+._*
+
+# Build / cache / local tooling
+.wrangler/
+**/.wrangler/
+.vinext/
+**/.vinext/
+.next/
+**/.next/
+dist/
+**/dist/
+.cache/
+**/.cache/
+*.log
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Editors
+.idea/
+.vscode/
+*.swp

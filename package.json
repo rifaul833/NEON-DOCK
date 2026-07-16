@@ -1,0 +1,11 @@
+{
+  "name": "first-10-launcher",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Game launcher for FIRST_10 collection",
+  "type": "module",
+  "scripts": {
+    "start": "node launcher/server.mjs",
+    "launcher": "node launcher/server.mjs"
+  }
+}

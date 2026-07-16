@@ -1,0 +1,65 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
+type Color = "red" | "green" | "yellow" | "blue";
+type Piece = { color: Color; id: number; progress: number };
+const COLORS: Color[] = ["red", "green", "yellow", "blue"];
+const LABELS: Record<Color,string> = { red:"Ruby", green:"Emerald", yellow:"Gold", blue:"Sapphire" };
+const PALETTE: Record<Color,string> = { red:"#a8323c", green:"#2f7958", yellow:"#d49a35", blue:"#315c91" };
+const START: Record<Color,number> = { red:0, green:13, yellow:26, blue:39 };
+const SAFE = new Set([0,8,13,21,26,34,39,47]);
+const PATH = [[6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[6,0]];
+const LANES: Record<Color,number[][]> = {
+  red:[[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]], green:[[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
+  yellow:[[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]], blue:[[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],
+};
+const YARDS: Record<Color,number[][]> = { red:[[2,2],[2,4],[4,2],[4,4]], green:[[2,10],[2,12],[4,10],[4,12]], yellow:[[10,10],[10,12],[12,10],[12,12]], blue:[[10,2],[10,4],[12,2],[12,4]] };
+const CENTERS: Record<Color,number[]> = { red:[7.15,6.45],green:[6.45,7.15],yellow:[7.15,7.85],blue:[7.85,7.15] };
+
+const freshPieces = () => COLORS.flatMap(color => [0,1,2,3].map(id => ({ color, id, progress:-1 })));
+
+export default function Home(){
+  const canvasRef=useRef<HTMLCanvasElement>(null); const audioRef=useRef<AudioContext|null>(null); const musicTimer=useRef<ReturnType<typeof setInterval>|null>(null);
+  const piecesRef=useRef<Piece[]>(freshPieces()); const currentRef=useRef(0); const dieRef=useRef<number|null>(null); const canMoveRef=useRef(false);
+  const [pieces,setPieces]=useState(piecesRef.current); const [current,setCurrent]=useState(0); const [die,setDie]=useState<number|null>(null); const [rolling,setRolling]=useState(false);
+  const [canMove,setCanMove]=useState(false); const [music,setMusic]=useState(true); const musicRef=useRef(true); const [winner,setWinner]=useState<Color|null>(null);
+  const [message,setMessage]=useState("Roll the dice to begin the royal race");
+  const tone=useCallback((freq:number,duration:number,type:OscillatorType="sine",volume=.035,delay=0)=>{const ctx=audioRef.current;if(!ctx||ctx.state!=="running")return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(freq,ctx.currentTime+delay);g.gain.setValueAtTime(volume,ctx.currentTime+delay);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+delay+duration);o.connect(g).connect(ctx.destination);o.start(ctx.currentTime+delay);o.stop(ctx.currentTime+delay+duration);},[]);
+  const ensureAudio=useCallback(()=>{if(!audioRef.current)audioRef.current=new AudioContext();void audioRef.current.resume();},[]);
+  const stopMusic=useCallback(()=>{if(musicTimer.current)clearInterval(musicTimer.current);musicTimer.current=null;},[]);
+  const startMusic=useCallback(()=>{if(musicTimer.current||!musicRef.current)return;const notes=[261.6,329.6,392,329.6,293.7,349.2,440,349.2];let i=0;const play=()=>{tone(notes[i%notes.length],.62,"sine",.011);if(i%2===0)tone(notes[i%notes.length]/2,.8,"triangle",.006);i++;};play();musicTimer.current=setInterval(play,680);},[tone]);
+  useEffect(()=>()=>stopMusic(),[stopMusic]);
+  const toggleMusic=()=>{ensureAudio();const next=!musicRef.current;musicRef.current=next;setMusic(next);if(next)startMusic();else stopMusic();};
+  const movable=useCallback((p:Piece,roll:number)=>p.color===COLORS[currentRef.current]&&((p.progress===-1&&roll===6)||(p.progress>=0&&p.progress<58&&p.progress+roll<=58)),[]);
+  const nextTurn=useCallback((keep=false)=>{if(!keep){currentRef.current=(currentRef.current+1)%4;setCurrent(currentRef.current);}dieRef.current=null;setDie(null);canMoveRef.current=false;setCanMove(false);setMessage(`${LABELS[COLORS[currentRef.current]]}, roll the dice`);},[]);
+  const rollDice=useCallback(()=>{if(rolling||canMoveRef.current||winner)return;ensureAudio();startMusic();setRolling(true);setMessage("The royal dice is rolling…");[0,.052,.104,.156,.208,.26,.312].forEach((d,i)=>tone(115+i*31,.048,"square",.032,d));let t=0;const timer=setInterval(()=>{setDie(1+Math.floor(Math.random()*6));if(++t===10){clearInterval(timer);const result=1+Math.floor(Math.random()*6);dieRef.current=result;setDie(result);setRolling(false);tone(result===6?880:540+result*38,.22,"triangle",.06);if(result===6)tone(1174,.32,"sine",.04,.11);const options=piecesRef.current.filter(p=>movable(p,result));if(options.length){canMoveRef.current=true;setCanMove(true);setMessage(result===6?"A royal six! Choose a piece":"Choose a highlighted piece");}else{setMessage("No legal move — passing the dice");setTimeout(()=>nextTurn(result===6),850);}}},55);},[ensureAudio,movable,nextTurn,rolling,startMusic,tone,winner]);
+  const positionOf=useCallback((p:Piece):number[]=>{if(p.progress===-1)return YARDS[p.color][p.id];if(p.progress<52)return PATH[(START[p.color]+p.progress)%52];if(p.progress<58)return LANES[p.color][p.progress-52];const c=CENTERS[p.color];return[c[0]+(p.id%2)*.18,c[1]+Math.floor(p.id/2)*.18];},[]);
+  const movePiece=useCallback((piece:Piece)=>{const roll=dieRef.current;if(!roll||!canMoveRef.current||!movable(piece,roll))return;ensureAudio();const next=piecesRef.current.map(p=>({...p}));const moving=next.find(p=>p.color===piece.color&&p.id===piece.id)!;moving.progress=moving.progress===-1?0:moving.progress+roll;for(let i=0;i<Math.min(roll,6);i++)tone(300+i*35,.055,"triangle",.028,i*.055);
+    let captured=0;if(moving.progress<52){const global=(START[moving.color]+moving.progress)%52;if(!SAFE.has(global)){next.forEach(p=>{if(p.color!==moving.color&&p.progress>=0&&p.progress<52&&(START[p.color]+p.progress)%52===global){p.progress=-1;captured++;}});}}
+    if(captured){tone(145,.28,"sawtooth",.055,.24);setMessage(`Captured ${captured} rival piece${captured>1?"s":""}!`);}else if(moving.progress===58){tone(784,.14,"sine",.05,.22);tone(1047,.3,"sine",.045,.34);setMessage("One piece reached the palace!");}else setMessage("A fine move!");
+    piecesRef.current=next;setPieces(next);canMoveRef.current=false;setCanMove(false);const won=next.filter(p=>p.color===moving.color&&p.progress===58).length===4;if(won){setWinner(moving.color);setMessage(`${LABELS[moving.color]} wins the crown!`);tone(523,.16,"triangle",.06);tone(659,.16,"triangle",.06,.17);tone(784,.16,"triangle",.06,.34);tone(1047,.5,"triangle",.06,.51);return;}setTimeout(()=>nextTurn(roll===6||captured>0),650);},[ensureAudio,movable,nextTurn,tone]);
+  const reset=()=>{const fresh=freshPieces();piecesRef.current=fresh;setPieces(fresh);currentRef.current=0;setCurrent(0);dieRef.current=null;setDie(null);canMoveRef.current=false;setCanMove(false);setWinner(null);setMessage("Roll the dice to begin the royal race");};
+
+  useEffect(()=>{const canvas=canvasRef.current,ctx=canvas?.getContext("2d");if(!canvas||!ctx)return;const dpr=Math.min(devicePixelRatio,2);canvas.width=900*dpr;canvas.height=900*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);const S=60;
+    const cell=(r:number,c:number,fill="#f5e8c8")=>{ctx.fillStyle=fill;ctx.fillRect(c*S,r*S,S,S);ctx.strokeStyle="#684a34";ctx.lineWidth=1.5;ctx.strokeRect(c*S,r*S,S,S);};
+    const circle=(x:number,y:number,r:number,fill:string,stroke="#fff4d5",lw=3)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();};
+    const draw=()=>{ctx.clearRect(0,0,900,900);ctx.fillStyle="#f1dfb9";ctx.fillRect(0,0,900,900);for(let r=0;r<15;r++)for(let c=0;c<15;c++){const path=PATH.some(([rr,cc])=>rr===r&&cc===c);const lane=COLORS.find(k=>LANES[k].some(([rr,cc])=>rr===r&&cc===c));if(path||lane)cell(r,c,lane?PALETTE[lane]:"#f8edcf");}
+      const yards:[Color,number,number][]=[["red",0,0],["green",0,9],["blue",9,0],["yellow",9,9]];yards.forEach(([color,r,c])=>{ctx.fillStyle=PALETTE[color];ctx.fillRect(c*S,r*S,6*S,6*S);ctx.strokeStyle="#fff2d1";ctx.lineWidth=12;ctx.strokeRect(c*S+18,r*S+18,6*S-36,6*S-36);ctx.fillStyle="rgba(255,248,225,.88)";ctx.fillRect(c*S+55,r*S+55,250,250);YARDS[color].forEach(([rr,cc])=>circle(cc*S+30,rr*S+30,31,"rgba(255,255,255,.55)",PALETTE[color],5));});
+      // central palace
+      const cx=450,cy=450;const palace:[Color,number][]=[["red",Math.PI], ["green",-Math.PI/2],["yellow",0],["blue",Math.PI/2]];palace.forEach(([color,angle])=>{ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,128,angle-Math.PI/4,angle+Math.PI/4);ctx.closePath();ctx.fillStyle=PALETTE[color];ctx.fill();ctx.strokeStyle="#f7e7c4";ctx.lineWidth=3;ctx.stroke();});circle(cx,cy,37,"#e9bd66","#fff2d0",5);ctx.fillStyle="#5c3b24";ctx.font="bold 22px Georgia";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("♛",cx,cy+1);
+      [0,13,26,39].forEach((idx,i)=>{const [r,c]=PATH[idx];cell(r,c,PALETTE[COLORS[i]]);ctx.fillStyle="#fff";ctx.font="23px Arial";ctx.fillText("★",c*S+30,r*S+31);});[8,21,34,47].forEach(idx=>{const [r,c]=PATH[idx];ctx.fillStyle="#a77a43";ctx.font="22px Arial";ctx.fillText("★",c*S+30,r*S+31);});
+      const groups=new Map<string,Piece[]>();piecesRef.current.forEach(p=>{const [r,c]=positionOf(p);const k=`${r},${c}`;groups.set(k,[...(groups.get(k)||[]),p]);});groups.forEach(group=>group.forEach((p,i)=>{const [r,c]=positionOf(p),n=group.length,offsets=n>1?[[-10,-10],[10,-10],[-10,10],[10,10]]:[[0,0]],o=offsets[i]||[0,0],x=c*S+30+o[0],y=r*S+30+o[1],active=canMoveRef.current&&!!dieRef.current&&movable(p,dieRef.current);ctx.save();ctx.shadowColor="rgba(41,25,15,.5)";ctx.shadowBlur=8;ctx.shadowOffsetY=7;circle(x,y,n>1?17:22,PALETTE[p.color],active?"#fff6b5":"#fff0d0",active?6:3);ctx.shadowColor="transparent";circle(x-5,y-6,n>1?5:7,"rgba(255,255,255,.38)","transparent",0);if(active){ctx.beginPath();ctx.arc(x,y,n>1?25:31,0,Math.PI*2);ctx.setLineDash([4,5]);ctx.strokeStyle="#fff4a6";ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);}ctx.restore();}));raf=requestAnimationFrame(draw);};let raf=requestAnimationFrame(draw);return()=>cancelAnimationFrame(raf);},[pieces,canMove,movable,positionOf]);
+  const boardClick=(e:React.PointerEvent<HTMLCanvasElement>)=>{if(!canMoveRef.current||!dieRef.current)return;const r=e.currentTarget.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*900,y=(e.clientY-r.top)/r.height*900;const candidates=piecesRef.current.filter(p=>movable(p,dieRef.current!));let best:Piece|null=null,dist=45;for(const p of candidates){const [rr,cc]=positionOf(p),d=Math.hypot(x-(cc*60+30),y-(rr*60+30));if(d<dist){best=p;dist=d;}}if(best)movePiece(best);};
+  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key===" "||e.key.toLowerCase()==="r"){e.preventDefault();rollDice();}};window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key);},[rollDice]);
+  const remaining=(color:Color)=>pieces.filter(p=>p.color===color&&p.progress===58).length;
+  return <main className="ludo-shell">
+    <div className="texture"/><header><div className="logo"><span>♛</span><div><strong>ROYAL LUDO</strong><small>THE CLASSIC RACE HOME</small></div></div><div className="header-actions"><button onClick={reset}>↻ <span>New game</span></button><button className={music?"on":""} onClick={toggleMusic}>{music?"♪":"♩"} <span>{music?"Music on":"Music off"}</span></button></div></header>
+    <section className="players" aria-label="Players">{COLORS.map((c,i)=><div key={c} className={`${c} ${current===i&&!winner?"active":""}`}><i>{i+1}</i><p><small>PLAYER {i+1}</small><strong>{LABELS[c]}</strong></p><b>{remaining(c)}<small>/4 HOME</small></b></div>)}</section>
+    <section className="board-stage"><div className="board-shadow"/><canvas ref={canvasRef} onPointerDown={boardClick} className="ludo-board" aria-label="Interactive four player Ludo board"/><div className="leg one"/><div className="leg two"/></section>
+    <aside className={`turn-card ${COLORS[current]}`}><span className="turn-dot"/><div><small>{winner?"GAME COMPLETE":`PLAYER ${current+1} · ${LABELS[COLORS[current]].toUpperCase()}`}</small><strong>{message}</strong></div></aside>
+    <aside className="dice-panel"><div className={`die d${die||1} ${rolling?"rolling":""}`}>{Array.from({length:9},(_,i)=><i key={i}/>)}</div><div><small>ROYAL DICE</small><strong>{die?`You rolled ${die}`:"Ready to roll"}</strong><span>{canMove?"Choose a glowing piece":"Roll to move your pieces"}</span></div><button onClick={rollDice} disabled={rolling||canMove||!!winner}>ROLL <kbd>R</kbd></button></aside>
+    {winner&&<div className="victory"><div><span>♛</span><small>THE CROWN BELONGS TO</small><h1>{LABELS[winner]}</h1><p>All four pieces reached the royal palace.</p><button onClick={reset}>PLAY AGAIN</button></div></div>}
+    <footer><span>ROLL A SIX TO LEAVE HOME</span><i/><span>LAND ON A RIVAL TO CAPTURE</span><i/><span>BRING ALL 4 PIECES TO THE PALACE</span></footer>
+  </main>;
+}

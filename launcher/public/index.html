@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEON DOCK — Game Launcher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c0c0c;
+      --panel: #111111;
+      --card: #0a0a0a;
+      --ink: #f3f3f3;
+      --muted: #8b8b8b;
+      --line: #2a2a2a;
+      --lime: #b8ff3c;
+      --cyan: #5ce1e6;
+      --err: #ff6b6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Space Grotesk", sans-serif;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse 70% 40% at 50% -10%, rgba(184, 255, 60, 0.08), transparent 55%),
+        var(--bg);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .shell {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 1.5rem clamp(1rem, 2.5vw, 2.5rem) 3.5rem;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-mark {
+      width: 18px;
+      height: 18px;
+      background: var(--lime);
+      border-radius: 3px;
+      box-shadow: 0 0 16px rgba(184, 255, 60, 0.45);
+    }
+
+    .top-meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .hero {
+      max-width: min(52rem, 90vw);
+      margin: 0 auto 3rem;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-family: "Archivo Black", sans-serif;
+      font-size: clamp(3.2rem, 9vw, 5.5rem);
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+      background: linear-gradient(180deg, #d9ff7a 0%, #f2e6c9 55%, #f7c9b8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero p {
+      margin: 1.1rem auto 1.45rem;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+      line-height: 1.5;
+      max-width: 40rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+
+    .btn {
+      appearance: none;
+      border: 0;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.92rem;
+      padding: 0.7rem 1.15rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn-lime { background: var(--lime); color: #111; }
+    .btn-lime:hover { filter: brightness(1.05); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid #4a4a4a;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.04); }
+
+    .library-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.1rem;
+    }
+
+    .library-head h2 {
+      font-family: "Archivo Black", sans-serif;
+      font-size: clamp(1.4rem, 2vw, 1.75rem);
+      letter-spacing: 0.04em;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .chip {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #151515;
+      color: #cfcfcf;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.35rem 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .chip[aria-pressed="true"] {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      color: #0b0b0b;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: clamp(1rem, 1.6vw, 1.5rem);
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--card);
+      border: 1px solid #1c1c1c;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+      min-height: 0;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: inset 4px 0 0 var(--accent, var(--lime));
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: #333;
+      box-shadow:
+        inset 3px 0 0 var(--accent, var(--lime)),
+        0 16px 32px rgba(0,0,0,0.45);
+    }
+
+    .card:focus-visible {
+      outline: 2px solid var(--lime);
+      outline-offset: 2px;
+    }
+
+    .card.busy { cursor: wait; }
+    .card.playing { border-color: color-mix(in srgb, var(--accent, var(--lime)) 50%, #333); }
+
+    .thumb {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      min-height: clamp(160px, 18vw, 260px);
+      background: #151515;
+      overflow: hidden;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.35s ease;
+    }
+
+    .card:hover .thumb img { transform: scale(1.04); }
+
+    .tag {
+      position: absolute;
+      left: 0.85rem;
+      bottom: 0.85rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.55rem;
+      border-radius: 3px;
+      background: rgba(0,0,0,0.72);
+      color: #fff;
+      border-left: 3px solid var(--accent, var(--lime));
+    }
+
+    .badge {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.65rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.25rem 0.45rem;
+      border-radius: 3px;
+      background: rgba(0,0,0,0.75);
+      color: var(--lime);
+      display: none;
+    }
+
+    .card.playing .badge,
+    .card.busy .badge { display: inline-block; }
+
+    .card.busy .badge { color: #f0c14b; }
+
+    .body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding: 1.1rem 1.15rem 1.05rem;
+      min-height: 140px;
+      background: #050505;
+    }
+
+    .body h3 {
+      font-size: clamp(1.15rem, 1.4vw, 1.4rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .body p {
+      color: var(--muted);
+      font-size: clamp(0.9rem, 1vw, 1rem);
+      line-height: 1.45;
+      flex: 1;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 0.45rem;
+    }
+
+    .controls {
+      color: #6f6f6f;
+      font-size: 0.82rem;
+    }
+
+    .play-cta {
+      color: var(--lime);
+      font-size: 0.95rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .card.busy .play-cta { color: #f0c14b; }
+
+    /* Play stage overlay */
+    .stage {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: #050505;
+      display: none;
+      flex-direction: column;
+    }
+
+    .stage.open { display: flex; }
+
+    .stage-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #1f1f1f;
+      background: #0c0c0c;
+    }
+
+    .stage-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .stage-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    .stage-frame-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      background: #000;
+    }
+
+    .stage-frame-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+    }
+
+    .loader {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.85rem;
+      background: #080808;
+      color: var(--muted);
+      text-align: center;
+      padding: 1.5rem;
+    }
+
+    .loader.show { display: flex; }
+
+    .loader strong {
+      color: var(--ink);
+      font-size: 1.15rem;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #2a2a2a;
+      border-top-color: var(--lime);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.25rem;
+      transform: translateX(-50%) translateY(120%);
+      background: #161616;
+      border: 1px solid #2f2f2f;
+      color: var(--ink);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      z-index: 60;
+      transition: transform 0.3s ease;
+      max-width: min(90vw, 420px);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: color-mix(in srgb, var(--err) 55%, #2f2f2f); }
+
+    body.playing-mode .shell { visibility: hidden; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span> NEON DOCK</div>
+      <div class="top-meta"><span id="game-count">9</span> local games · one hub</div>
+    </div>
+
+    <header class="hero">
+      <h1>NEON DOCK</h1>
+      <p>Pick a title. Play instantly in the browser — all run local from this machine.</p>
+      <div class="hero-actions">
+        <button class="btn btn-lime" type="button" id="open-library">Open Library</button>
+        <button class="btn btn-ghost" type="button" id="surprise">Surprise me</button>
+      </div>
+    </header>
+
+    <section id="library">
+      <div class="library-head">
+        <h2>LIBRARY</h2>
+        <div class="filters" id="filters" role="toolbar" aria-label="Filter games"></div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+  </div>
+
+  <div class="stage" id="stage" aria-hidden="true">
+    <div class="stage-bar">
+      <div class="stage-title" id="stage-title">Playing</div>
+      <div class="stage-actions">
+        <button class="btn btn-ghost" type="button" id="open-tab">Open in tab</button>
+        <button class="btn btn-lime" type="button" id="back-library">← Library</button>
+      </div>
+    </div>
+    <div class="stage-frame-wrap">
+      <div class="loader show" id="loader">
+        <div class="spinner" aria-hidden="true"></div>
+        <strong id="loader-title">Starting game…</strong>
+        <span id="loader-sub">First boot can take up to a minute</span>
+      </div>
+      <iframe id="frame" title="Game" allow="fullscreen; gamepad; autoplay"></iframe>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const filtersEl = document.getElementById("filters");
+    const toast = document.getElementById("toast");
+    const stage = document.getElementById("stage");
+    const frame = document.getElementById("frame");
+    const loader = document.getElementById("loader");
+    const loaderTitle = document.getElementById("loader-title");
+    const stageTitle = document.getElementById("stage-title");
+    const gameCount = document.getElementById("game-count");
+
+    /** @type {Map<string, object>} */
+    const games = new Map();
+    let filter = "All";
+    let toastTimer;
+    let playToken = 0;
+    let currentUrl = null;
+    let launching = false;
+
+    const CATEGORIES = ["All", "Arcade", "Puzzle", "Racing", "Shooter", "Board"];
+
+    function showToast(message, isError = false) {
+      toast.textContent = message;
+      toast.classList.toggle("error", isError);
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
+    }
+
+    function renderFilters() {
+      filtersEl.innerHTML = CATEGORIES.map((cat) => `
+        <button class="chip" type="button" data-filter="${cat}" aria-pressed="${filter === cat}">${cat}</button>
+      `).join("");
+    }
+
+    function visibleGames() {
+      const list = [...games.values()];
+      if (filter === "All") return list;
+      return list.filter((g) => g.category === filter);
+    }
+
+    function cardHtml(game) {
+      const busy = game.status === "starting" || launching && game._launching;
+      const playing = game.status === "running" && game.active;
+      const cta = busy ? "Booting…" : playing ? "Resume →" : "Play →";
+      const badge = busy ? "STARTING" : playing ? "LIVE" : "";
+      return `
+        <button class="card ${busy ? "busy" : ""} ${playing ? "playing" : ""}" type="button" data-id="${game.id}" style="--accent:${game.accent}">
+          <div class="thumb">
+            <img src="${game.cover}" alt="" loading="lazy" />
+            <span class="tag">${game.category}</span>
+            <span class="badge">${badge}</span>
+          </div>
+          <div class="body">
+            <h3>${game.title}</h3>
+            <p>${game.subtitle}</p>
+            <div class="meta-row">
+              <span class="controls">${game.controls}</span>
+              <span class="play-cta">${cta}</span>
+            </div>
+          </div>
+        </button>
+      `;
+    }
+
+    function renderGrid() {
+      const list = visibleGames();
+      grid.innerHTML = list.map(cardHtml).join("");
+      gameCount.textContent = String(games.size);
+    }
+
+    function patchCard(id) {
+      const game = games.get(id);
+      const el = grid.querySelector(`.card[data-id="${id}"]`);
+      if (!game || !el) {
+        renderGrid();
+        return;
+      }
+      const busy = game.status === "starting" || game._launching;
+      const playing = game.status === "running" && game.active;
+      el.classList.toggle("busy", !!busy);
+      el.classList.toggle("playing", !!playing);
+      el.querySelector(".play-cta").textContent = busy ? "Booting…" : playing ? "Resume →" : "Play →";
+      const badge = el.querySelector(".badge");
+      badge.textContent = busy ? "STARTING" : playing ? "LIVE" : "";
+    }
+
+    async function refreshQuiet() {
+      try {
+        const res = await fetch("/api/games");
+        const data = await res.json();
+        for (const g of data.games || []) {
+          const prev = games.get(g.id);
+          games.set(g.id, { ...g, _launching: prev?._launching });
+        }
+        // only rebuild list structure if filter/count identity changed; else patch
+        const ids = visibleGames().map((g) => g.id).join(",");
+        const shown = [...grid.querySelectorAll(".card")].map((el) => el.dataset.id).join(",");
+        if (ids !== shown) renderGrid();
+        else for (const g of games.values()) patchCard(g.id);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function openStage(title) {
+      stage.classList.add("open");
+      stage.setAttribute("aria-hidden", "false");
+      document.body.classList.add("playing-mode");
+      stageTitle.textContent = title;
+    }
+
+    function closeStage() {
+      stage.classList.remove("open");
+      stage.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("playing-mode");
+      frame.src = "about:blank";
+      currentUrl = null;
+      loader.classList.add("show");
+    }
+
+    function showGame(url) {
+      currentUrl = url;
+      loader.classList.remove("show");
+      frame.src = url;
+    }
+
+    async function playGame(id) {
+      const game = games.get(id);
+      if (!game || launching) return;
+
+      const token = ++playToken;
+      launching = true;
+      game._launching = true;
+      patchCard(id);
+
+      // mark others as not launching
+      for (const [gid, g] of games) {
+        if (gid !== id) {
+          g._launching = false;
+          g.active = false;
+          patchCard(gid);
+        }
+      }
+
+      openStage(game.title);
+      loader.classList.add("show");
+      loaderTitle.textContent = `Starting ${game.title}…`;
+      frame.src = "about:blank";
+
+      try {
+        const res = await fetch(`/api/games/${id}/play`, { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not start game");
+        if (token !== playToken) return;
+
+        game.status = "running";
+        game.url = data.url;
+        game.active = true;
+        game._launching = false;
+        for (const [gid, g] of games) {
+          if (gid !== id) {
+            g.status = "stopped";
+            g.active = false;
+            g.url = null;
+          }
+        }
+        renderGrid();
+        showGame(data.url);
+      } catch (err) {
+        if (token !== playToken) return;
+        game._launching = false;
+        game.status = "error";
+        patchCard(id);
+        loaderTitle.textContent = "Could not start";
+        document.getElementById("loader-sub").textContent = err.message || "Try again";
+        showToast(err.message || "Could not start game", true);
+      } finally {
+        if (token === playToken) launching = false;
+      }
+    }
+
+    filtersEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-filter]");
+      if (!btn) return;
+      filter = btn.dataset.filter;
+      renderFilters();
+      renderGrid();
+    });
+
+    grid.addEventListener("click", (e) => {
+      const card = e.target.closest(".card");
+      if (!card || launching) return;
+      playGame(card.dataset.id);
+    });
+
+    document.getElementById("open-library").addEventListener("click", () => {
+      document.getElementById("library").scrollIntoView({ behavior: "smooth" });
+    });
+
+    document.getElementById("surprise").addEventListener("click", () => {
+      const list = [...games.values()];
+      if (!list.length) return;
+      const pick = list[Math.floor(Math.random() * list.length)];
+      playGame(pick.id);
+    });
+
+    document.getElementById("back-library").addEventListener("click", () => {
+      playToken += 1;
+      launching = false;
+      closeStage();
+      refreshQuiet();
+    });
+
+    document.getElementById("open-tab").addEventListener("click", () => {
+      if (currentUrl) window.open(currentUrl, "_blank", "noopener");
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && stage.classList.contains("open")) {
+        document.getElementById("back-library").click();
+      }
+    });
+
+    async function boot() {
+      renderFilters();
+      const res = await fetch("/api/games");
+      const data = await res.json();
+      for (const g of data.games || []) games.set(g.id, g);
+      renderGrid();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
