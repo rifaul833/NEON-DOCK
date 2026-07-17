@@ -134,14 +134,24 @@ const catalog = [
     playUrl: "/games/ludo/",
   },
   {
-    id: "racingbike",
-    title: "Turbo Dice Riders",
-    subtitle: "3D bike racing — roll the dice and ride",
-    category: "Racing",
-    controls: "Arrows / A D",
-    accent: "#ff8a3d",
-    cover: "/covers/cycling.png",
-    playUrl: "/games/racingbike/",
+    id: "bubbleshooter",
+    title: "Bubble Boom!",
+    subtitle: "3D bubble shooter — aim, bounce, and pop",
+    category: "Puzzle",
+    controls: "Mouse / Touch",
+    accent: "#5ec8ff",
+    cover: "/covers/bubbleshooter.png",
+    playUrl: "/games/bubbleshooter/",
+  },
+  {
+    id: "popper",
+    title: "Pop! Party",
+    subtitle: "Tap bubbles, chain combos, dodge bombs",
+    category: "Arcade",
+    controls: "Mouse / Touch",
+    accent: "#ff6bcb",
+    cover: "/covers/popper.png",
+    playUrl: "/games/popper/",
   },
 ];
 
@@ -150,6 +160,8 @@ const extraCovers = [
   ["CandyBlast/CandyBlast/public/og.png", "covers/candyblast.png"],
   ["Carrom/Carrom/public/og.png", "covers/carrom.png"],
   ["Pool/Pool/public/og.png", "covers/pool.png"],
+  ["Bubble Shooter/Bubble Shooter/public/og.png", "covers/bubbleshooter.png"],
+  ["Popper/Popper/public/og.png", "covers/popper.png"],
 ];
 for (const [srcRel, destRel] of extraCovers) {
   const src = path.join(ROOT, srcRel);

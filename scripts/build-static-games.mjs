@@ -20,7 +20,8 @@ const GAMES = [
   { id: "pool", dir: "Pool/Pool", title: "Happy Break! — Cartoon Pool", description: "Aim, shoot, and clear the table in this cheerful pool game." },
   { id: "snakes", dir: "SnakesAndLadder/SnakesAndLadder", title: "Snake & Ladder — Race to the Top!", description: "A colorful Snake & Ladder game — climb or slide." },
   { id: "ludo", dir: "Ludo/Ludo", title: "Ludo — Classic Race Home", description: "A polished four-player Ludo game with classic rules." },
-  { id: "racingbike", dir: "Racing-Bike/Racing-Bike", title: "Turbo Dice Riders — 3D Bike Racing", description: "3D bike racing — roll the dice and ride." },
+  { id: "bubbleshooter", dir: "Bubble Shooter/Bubble Shooter", title: "Bubble Boom! — 3D Bubble Shooter", description: "A cheerful, cartoon-style 3D bubble shooter with music, combos, and bank shots." },
+  { id: "popper", dir: "Popper/Popper", title: "Pop! Party — Cartoon Bubble Popper", description: "Tap happy bubbles, chain huge combos, and dodge bombs in a joyful pop rush." },
 ];
 
 function rmrf(p) {

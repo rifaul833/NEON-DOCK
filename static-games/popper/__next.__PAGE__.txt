@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[30861,["/games/popper/_next/static/chunks/0dwlnxcj4q_p0.js","/games/popper/_next/static/chunks/002wrote-cdun.js"],"default"]
+3:I[17470,["/games/popper/_next/static/chunks/0dwlnxcj4q_p0.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/games/popper/_next/static/chunks/002wrote-cdun.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"oMDzsDRA-aTqdrX-kQeoW"}
+5:null
