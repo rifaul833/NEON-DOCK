@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+  <title>High Hills</title>
+  <link rel="stylesheet" href="assets/css/app.css" type="text/css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+    #content, #orientation { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="content"></div>
+  <div id="orientation"></div>
+  <script src="famobi-api.js"></script>
+  <script>
+    window.famobi_gameID = "high-hills";
+  </script>
+  <script src="js/all.js"></script>
+  <script>
+    (function () {
+      var nape = window.nape;
+      var gm = window.gm;
+      if (typeof gm === "function") new gm();
+    })();
+  </script>
+</body>
+</html>

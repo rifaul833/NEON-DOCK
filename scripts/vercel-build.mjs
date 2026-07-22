@@ -40,6 +40,9 @@ copyDir(path.join(ROOT, "launcher", "public"), OUT);
 // Highway Racing (already static HTML)
 copyDir(path.join(ROOT, "javascript-racer"), path.join(OUT, "games", "racer"));
 
+// High Hills (Famobi HTML5 package, local stub)
+copyDir(path.join(ROOT, "high-hills"), path.join(OUT, "games", "highhills"));
+
 // Prebuilt Next static exports
 if (!fs.existsSync(STATIC_GAMES)) {
   console.error("Missing static-games/. Run: node scripts/build-static-games.mjs");
@@ -153,6 +156,16 @@ const catalog = [
     cover: "/covers/popper.png",
     playUrl: "/games/popper/",
   },
+  {
+    id: "highhills",
+    title: "High Hills",
+    subtitle: "Drive, flip, and conquer steep hill tracks",
+    category: "Racing",
+    controls: "Tap / Hold",
+    accent: "#7ad4ff",
+    cover: "/covers/highhills.jpg",
+    playUrl: "/games/highhills/game/index.html",
+  },
 ];
 
 const extraCovers = [
@@ -162,6 +175,7 @@ const extraCovers = [
   ["Pool/Pool/public/og.png", "covers/pool.png"],
   ["Bubble Shooter/Bubble Shooter/public/og.png", "covers/bubbleshooter.png"],
   ["Popper/Popper/public/og.png", "covers/popper.png"],
+  ["launcher/public/covers/highhills.jpg", "covers/highhills.jpg"],
 ];
 for (const [srcRel, destRel] of extraCovers) {
   const src = path.join(ROOT, srcRel);

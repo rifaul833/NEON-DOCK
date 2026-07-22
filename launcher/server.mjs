@@ -150,6 +150,19 @@ const GAMES = [
     kind: "vinext",
     cover: path.join(PUBLIC, "covers", "popper.png"),
   },
+  {
+    id: "highhills",
+    title: "High Hills",
+    subtitle: "Drive, flip, and conquer steep hill tracks",
+    category: "Racing",
+    controls: "Tap / Hold",
+    accent: "#7ad4ff",
+    cwd: path.join(ROOT, "high-hills"),
+    port: 4111,
+    kind: "static",
+    entry: "game/index.html",
+    cover: path.join(PUBLIC, "covers", "highhills.jpg"),
+  },
 ];
 
 /** @type {Map<string, { child: import('node:child_process').ChildProcess | null, status: 'stopped' | 'starting' | 'running' | 'error', error?: string, startedAt?: number }>} */
