@@ -37,11 +37,11 @@ mkdirp(OUT);
 // Launcher UI + covers
 copyDir(path.join(ROOT, "launcher", "public"), OUT);
 
-// Highway Racing (already static HTML)
-copyDir(path.join(ROOT, "javascript-racer"), path.join(OUT, "games", "racer"));
-
-// High Hills (Famobi HTML5 package, local stub)
+// Summit Rush (Famobi HTML5 package, local stub)
 copyDir(path.join(ROOT, "high-hills"), path.join(OUT, "games", "highhills"));
+
+// Shooting Car (Famobi HTML5 package, local stub)
+copyDir(path.join(ROOT, "shooting-car"), path.join(OUT, "games", "shootingcar"));
 
 // Prebuilt Next static exports
 if (!fs.existsSync(STATIC_GAMES)) {
@@ -117,16 +117,6 @@ const catalog = [
     playUrl: "/games/snakes/",
   },
   {
-    id: "racer",
-    title: "Highway Racing",
-    subtitle: "Classic pseudo-3D highway racing",
-    category: "Racing",
-    controls: "Left / Right",
-    accent: "#7cffb2",
-    cover: "/covers/highway.png",
-    playUrl: "/games/racer/v4.final.html",
-  },
-  {
     id: "ludo",
     title: "Ludo",
     subtitle: "3D board race — roll, capture, and get all pieces home",
@@ -158,13 +148,23 @@ const catalog = [
   },
   {
     id: "highhills",
-    title: "High Hills",
-    subtitle: "Drive, flip, and conquer steep hill tracks",
+    title: "Summit Rush",
+    subtitle: "Flip, boost, and climb endless hill tracks",
     category: "Racing",
     controls: "Tap / Hold",
     accent: "#7ad4ff",
     cover: "/covers/highhills.jpg",
     playUrl: "/games/highhills/game/index.html",
+  },
+  {
+    id: "shootingcar",
+    title: "Shooting Car",
+    subtitle: "Shoot, dodge, and outrun the chaos",
+    category: "Action",
+    controls: "Keyboard / Touch",
+    accent: "#ff5a36",
+    cover: "/covers/shootingcar.jpg",
+    playUrl: "/games/shootingcar/game/index.html",
   },
 ];
 
@@ -176,6 +176,7 @@ const extraCovers = [
   ["Bubble Shooter/Bubble Shooter/public/og.png", "covers/bubbleshooter.png"],
   ["Popper/Popper/public/og.png", "covers/popper.png"],
   ["launcher/public/covers/highhills.jpg", "covers/highhills.jpg"],
+  ["launcher/public/covers/shootingcar.jpg", "covers/shootingcar.jpg"],
 ];
 for (const [srcRel, destRel] of extraCovers) {
   const src = path.join(ROOT, srcRel);

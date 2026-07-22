@@ -1,0 +1,8 @@
+/* NEON DOCK visual refresh for Summit Rush */
+html, body {
+  background: radial-gradient(circle at 50% 0%, #5a2d9e 0%, #2B1054 45%, #14082a 100%) !important;
+}
+
+#content canvas {
+  filter: saturate(1.18) contrast(1.06) brightness(1.04);
+}

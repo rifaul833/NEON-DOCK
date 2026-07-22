@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shooting Car</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+  <link href="index.css" rel="stylesheet" type="text/css" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #333; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="orientation"></div>
+  <script src="famobi-api.js"></script>
+  <script>
+    window.famobi_gameID = "burnin-rubber";
+  </script>
+  <script src="js/all.js"></script>
+  <script>
+    (function () {
+      var start = window.famobi_start;
+      if (typeof start !== "function") return;
+
+      window.famobi_start = function () {
+        start();
+        var preloaderStartedAt = Date.now();
+        var patchTimer = setInterval(function () {
+          if (!window.game || !game.state || !game.state.states.Preloader) return;
+          var Preloader = game.state.states.Preloader;
+          if (game.state.current !== "Preloader") {
+            clearInterval(patchTimer);
+            return;
+          }
+          if (Preloader.__neonDockPatched) return;
+          Preloader.__neonDockPatched = true;
+          clearInterval(patchTimer);
+
+          Preloader.update = function () {
+            var audioReady =
+              this.cache.isSoundDecoded("SoundEffects") &&
+              this.cache.isSoundDecoded("Music");
+            var timedOut = Date.now() - preloaderStartedAt > 12000;
+            if (audioReady || timedOut) {
+              this.DestroyPreloader();
+              this.state.start(Globals.scene);
+            }
+          };
+        }, 50);
+      };
+
+      window.famobi_start();
+    })();
+  </script>
+</body>
+</html>

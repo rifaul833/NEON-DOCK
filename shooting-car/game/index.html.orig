@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>XformGames - Burnin' Rubber HTML5</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+	<link href="index.css" rel="stylesheet" type="text/css" />
+
+	<script>
+	// Package-ID
+	window.famobi_gameID = "burnin-rubber";
+	window.famobi_gameJS = ['js/all.js',
+		function(){
+			window.famobi_start();
+		}
+	];
+
+	(function (document, url, fgJS, firstJS) {
+	        fgJS = document.createElement('script');
+	        firstJS = document.getElementsByTagName('script')[0];
+	        fgJS.src = url + encodeURIComponent(document.location.href);
+	        firstJS.parentNode.insertBefore(fgJS, firstJS);
+	})(document, '/html5games/gameapi/v1.js?e=');
+	</script>
+</head>
+<body>
+	<div id='orientation'></div>
+</body>
+</html>
