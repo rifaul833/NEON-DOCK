@@ -163,6 +163,19 @@ const GAMES = [
     entry: "game/index.html",
     cover: path.join(PUBLIC, "covers", "shootingcar.jpg"),
   },
+  {
+    id: "rushracing",
+    title: "Rush Racing",
+    subtitle: "Race through traffic at breakneck speed",
+    category: "Racing",
+    controls: "Keyboard / Touch",
+    accent: "#ffd24a",
+    cwd: path.join(ROOT, "rush-racing"),
+    port: 4113,
+    kind: "static",
+    entry: "game/index.html",
+    cover: path.join(PUBLIC, "covers", "rushracing.jpg"),
+  },
 ];
 
 /** @type {Map<string, { child: import('node:child_process').ChildProcess | null, status: 'stopped' | 'starting' | 'running' | 'error', error?: string, startedAt?: number }>} */

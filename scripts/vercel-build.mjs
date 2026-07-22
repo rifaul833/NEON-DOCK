@@ -43,6 +43,9 @@ copyDir(path.join(ROOT, "high-hills"), path.join(OUT, "games", "highhills"));
 // Shooting Car (Famobi HTML5 package, local stub)
 copyDir(path.join(ROOT, "shooting-car"), path.join(OUT, "games", "shootingcar"));
 
+// Rush Racing (Famobi WASM package, local stub)
+copyDir(path.join(ROOT, "rush-racing"), path.join(OUT, "games", "rushracing"));
+
 // Prebuilt Next static exports
 if (!fs.existsSync(STATIC_GAMES)) {
   console.error("Missing static-games/. Run: node scripts/build-static-games.mjs");
@@ -166,6 +169,16 @@ const catalog = [
     cover: "/covers/shootingcar.jpg",
     playUrl: "/games/shootingcar/game/index.html",
   },
+  {
+    id: "rushracing",
+    title: "Rush Racing",
+    subtitle: "Race through traffic at breakneck speed",
+    category: "Racing",
+    controls: "Keyboard / Touch",
+    accent: "#ffd24a",
+    cover: "/covers/rushracing.jpg",
+    playUrl: "/games/rushracing/game/index.html",
+  },
 ];
 
 const extraCovers = [
@@ -177,6 +190,7 @@ const extraCovers = [
   ["Popper/Popper/public/og.png", "covers/popper.png"],
   ["launcher/public/covers/highhills.jpg", "covers/highhills.jpg"],
   ["launcher/public/covers/shootingcar.jpg", "covers/shootingcar.jpg"],
+  ["launcher/public/covers/rushracing.jpg", "covers/rushracing.jpg"],
 ];
 for (const [srcRel, destRel] of extraCovers) {
   const src = path.join(ROOT, srcRel);
