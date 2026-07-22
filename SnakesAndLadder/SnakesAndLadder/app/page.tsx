@@ -80,12 +80,22 @@ function Dice({ value, rolling }: { value: number; rolling: boolean }) {
   const dots: Record<number, number[]> = {
     1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
   };
+  const face = (number: number, className: string) => (
+    <div className={`dice-face ${className}`}>
+      {Array.from({ length: 9 }, (_, i) => <span key={i} className={dots[number].includes(i) ? "dot" : ""} />)}
+    </div>
+  );
+  const right = value % 6 + 1;
+  const top = (value + 2) % 6 + 1;
   return (
     <div className={`dice-wrap ${rolling ? "rolling" : ""}`} aria-label={`Dice shows ${value}`}>
       <div className="dice">
-        <div className="dice-face face-front">{Array.from({ length: 9 }, (_, i) => <span key={i} className={dots[value].includes(i) ? "dot" : ""} />)}</div>
-        <div className="dice-face face-right"><span className="dot" /></div>
-        <div className="dice-face face-top"><span className="dot" /><span className="dot" /></div>
+        {face(value, "face-front")}
+        {face(7 - value, "face-back")}
+        {face(right, "face-right")}
+        {face(7 - right, "face-left")}
+        {face(top, "face-top")}
+        {face(7 - top, "face-bottom")}
       </div>
     </div>
   );
@@ -139,6 +149,9 @@ export default function Home() {
   const [winner, setWinner] = useState<number | null>(null);
   const [message, setMessage] = useState("Player 1, roll the dice!");
   const [musicOn, setMusicOn] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [pawnMotion, setPawnMotion] = useState<{ player: number; type: "climbing" | "bitten" } | null>(null);
+  const [boardEvent, setBoardEvent] = useState<{ type: "ladder" | "snake"; text: string } | null>(null);
 
   const board = useMemo(() => Array.from({ length: 100 }, (_, i) => {
     const row = Math.floor(i / 10);
@@ -179,13 +192,15 @@ export default function Home() {
     setDice(1);
     setWinner(null);
     setRolling(false);
+    setMoving(false);
+    setPawnMotion(null);
+    setBoardEvent(null);
     setMessage("Player 1, roll the dice!");
   }, [players]);
 
   const roll = useCallback(() => {
-    if (rolling || winner !== null) return;
+    if (rolling || moving || winner !== null) return;
     playDiceSound();
-    if (!musicOn) setMusicOn(true);
     setRolling(true);
     setMessage("Wheee… rolling!");
     let ticks = 0;
@@ -197,6 +212,7 @@ export default function Home() {
       const value = Math.floor(Math.random() * 6) + 1;
       setDice(value);
       setRolling(false);
+      setMoving(true);
       setPositions(current => {
         const next = [...current];
         const attempted = next[turn] + value;
@@ -205,26 +221,50 @@ export default function Home() {
           window.setTimeout(() => {
             setTurn(t => 1 - t);
             setMessage(`Player ${2 - turn}, your turn!`);
+            setMoving(false);
           }, 750);
           return next;
         }
         const landed = jumps[attempted] ?? attempted;
-        next[turn] = landed;
-        if (landed === 100) {
+        next[turn] = attempted;
+        if (attempted === 100) {
           setWinner(turn);
+          setMoving(false);
           setMessage(`Player ${turn + 1} wins the crown!`);
+        } else if (landed !== attempted) {
+          const isLadder = landed > attempted;
+          setPawnMotion({ player: turn, type: isLadder ? "climbing" : "bitten" });
+          setBoardEvent({
+            type: isLadder ? "ladder" : "snake",
+            text: isLadder ? `Player ${turn + 1} found a ladder!` : `Snake bite! Player ${turn + 1} slides down!`,
+          });
+          setMessage(isLadder ? `🪜 Ladder! Climbing from ${attempted} to ${landed}…` : `🐍 Snake bite at ${attempted}! Sliding to ${landed}…`);
+          window.setTimeout(() => {
+            setPositions(latest => {
+              const moved = [...latest];
+              moved[turn] = landed;
+              return moved;
+            });
+          }, 600);
+          window.setTimeout(() => {
+            setPawnMotion(null);
+            setBoardEvent(null);
+            setTurn(t => 1 - t);
+            setMessage(`Player ${2 - turn}, your turn!`);
+            setMoving(false);
+          }, 1900);
         } else {
-          const event = landed > attempted ? `Ladder boost! Up to ${landed}!` : landed < attempted ? `Oh no, a slide to ${landed}!` : `Player ${turn + 1} moved ${value} spaces.`;
-          setMessage(event);
+          setMessage(`Player ${turn + 1} moved ${value} spaces.`);
           window.setTimeout(() => {
             setTurn(t => 1 - t);
             setMessage(`Player ${2 - turn}, your turn!`);
+            setMoving(false);
           }, 850);
         }
         return next;
       });
     }, 90);
-  }, [musicOn, rolling, turn, winner]);
+  }, [moving, rolling, turn, winner]);
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -258,7 +298,7 @@ export default function Home() {
           </div>
           <div className="roll-zone">
             <Dice value={dice} rolling={rolling} />
-            <div><button className="roll-button" onClick={roll} disabled={rolling || winner !== null}>{rolling ? "Rolling…" : "Roll Dice"}</button><p>or press spacebar</p></div>
+            <div><button className="roll-button" onClick={roll} disabled={rolling || moving || winner !== null}>{rolling ? "Rolling…" : moving ? "Moving…" : "Roll Dice"}</button><p>or press spacebar</p></div>
           </div>
           <p className="game-message" aria-live="polite">{message}</p>
         </div>
@@ -275,10 +315,12 @@ export default function Home() {
               {snakes.map(s => <Connector key={s.from} from={s.from} to={s.to} type="snake" color={s.color} />)}
               {positions.map((p, i) => {
                 const point = pointFor(p);
-                return <div key={i} className={`pawn p${i + 1}`} style={{ left: `${point.x + (i === 0 ? -1.7 : 1.7)}%`, top: `${point.y}%` }}><span /></div>;
+                const motion = pawnMotion?.player === i ? pawnMotion.type : "";
+                return <div key={i} className={`pawn p${i + 1} ${motion}`} style={{ left: `${point.x + (i === 0 ? -1.7 : 1.7)}%`, top: `${point.y}%` }}><span /></div>;
               })}
             </div>
           </div>
+          {boardEvent && <div className={`board-event ${boardEvent.type}`} aria-live="assertive"><span>{boardEvent.type === "ladder" ? "🪜" : "🐍"}</span><strong>{boardEvent.text}</strong></div>}
           <div className="island left" /><div className="island right" />
         </div>
       </section>

@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = requestHeaders.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
   const title = "Royal Ludo — 3D HTML5 Board Game";
-  const description = "A polished four-player 3D Ludo game with classic rules, captures, safe squares, background music, and satisfying dice sounds.";
+  const description = "A bright cartoon 3D Ludo game for same-device friends or computer opponents, with classic rules, music, and satisfying dice sounds.";
   return {
     title,
     description,

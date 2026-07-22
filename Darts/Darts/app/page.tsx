@@ -24,6 +24,7 @@ function scoreAt(nx: number, ny: number) {
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const aimRef = useRef({ x: 0, y: 0 });
+  const targetAimRef = useRef({ x: 0, y: 0 });
   const swayRef = useRef({ x: 0, y: 0 });
   const hitsRef = useRef<Hit[]>([]);
   const animationRef = useRef<{ start: number; targetX: number; targetY: number } | null>(null);
@@ -32,7 +33,7 @@ export default function Home() {
   const [score, setScore] = useState(0);
   const [dartsLeft, setDartsLeft] = useState(ROUND_DARTS);
   const [streak, setStreak] = useState(0);
-  const [message, setMessage] = useState("AIM, THEN TAP TO THROW!");
+  const [message, setMessage] = useState("HARD MODE: TRACK THE RETICLE!");
   const [gameOver, setGameOver] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
 
@@ -57,13 +58,16 @@ export default function Home() {
 
   const resetGame = useCallback(() => {
     hitsRef.current = [];
+    aimRef.current = { x: 0, y: 0 };
+    targetAimRef.current = { x: 0, y: 0 };
+    swayRef.current = { x: 0, y: 0 };
     animationRef.current = null;
     throwingRef.current = false;
     gameOverRef.current = false;
     setScore(0);
     setDartsLeft(ROUND_DARTS);
     setStreak(0);
-    setMessage("AIM, THEN TAP TO THROW!");
+    setMessage("HARD MODE: TRACK THE RETICLE!");
     setGameOver(false);
   }, []);
 
@@ -73,7 +77,7 @@ export default function Home() {
     if (!canvas) return;
 
     const roundProgress = hitsRef.current.length / ROUND_DARTS;
-    const spread = 0.045 + roundProgress * 0.03;
+    const spread = 0.07 + roundProgress * 0.04;
     const spreadAngle = Math.random() * Math.PI * 2;
     const spreadDistance = spread * Math.sqrt(Math.random());
     const targetX = aimRef.current.x + swayRef.current.x + Math.cos(spreadAngle) * spreadDistance;
@@ -91,6 +95,7 @@ export default function Home() {
     if (!ctx) return;
 
     let raf = 0;
+    let lastFrame = 0;
     let width = 0;
     let height = 0;
     let cx = 0;
@@ -166,6 +171,8 @@ export default function Home() {
     };
 
     const draw = (now: number) => {
+      const frameScale = lastFrame ? Math.min((now - lastFrame) / 16.67, 2) : 1;
+      lastFrame = now;
       ctx.clearRect(0, 0, width, height);
 
       const sky = ctx.createLinearGradient(0, 0, 0, height);
@@ -283,10 +290,14 @@ export default function Home() {
         }
       } else if (!gameOverRef.current) {
         const roundProgress = hitsRef.current.length / ROUND_DARTS;
-        const drift = .034 + roundProgress * .018;
+        const follow = 1 - Math.pow(.91, frameScale);
+        aimRef.current.x += (targetAimRef.current.x - aimRef.current.x) * follow;
+        aimRef.current.y += (targetAimRef.current.y - aimRef.current.y) * follow;
+
+        const drift = .052 + roundProgress * .028;
         swayRef.current = {
-          x: Math.sin(now * .0031) * drift + Math.sin(now * .0077) * .012,
-          y: Math.cos(now * .0027) * drift * .78 + Math.sin(now * .0061) * .01,
+          x: Math.sin(now * .0037) * drift + Math.sin(now * .0093) * .018 + Math.cos(now * .0011) * .012,
+          y: Math.cos(now * .0031) * drift * .84 + Math.sin(now * .0074) * .016,
         };
         const rawX = cx + aimRef.current.x * radius;
         const rawY = cy + aimRef.current.y * radius;
@@ -306,6 +317,16 @@ export default function Home() {
         ctx.beginPath();
         ctx.arc(rawX, rawY, 3, 0, Math.PI * 2);
         ctx.fill();
+
+        const accuracyCone = (.07 + roundProgress * .04) * radius;
+        ctx.strokeStyle = "rgba(239,85,77,.52)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 6]);
+        ctx.beginPath();
+        ctx.arc(ax, ay, accuracyCone, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
         ctx.strokeStyle = "rgba(255,255,255,.9)";
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -326,7 +347,7 @@ export default function Home() {
       const rect = canvas.getBoundingClientRect();
       const px = clientX - rect.left;
       const py = clientY - rect.top;
-      aimRef.current = {
+      targetAimRef.current = {
         x: Math.max(-1.06, Math.min(1.06, (px - cx) / radius)),
         y: Math.max(-1.06, Math.min(1.06, (py - cy) / radius)),
       };
@@ -335,10 +356,10 @@ export default function Home() {
     const onPointerDown = (event: PointerEvent) => { updateAim(event.clientX, event.clientY); throwDart(); };
     const onKeyDown = (event: KeyboardEvent) => {
       const step = .045;
-      if (event.key === "ArrowLeft") aimRef.current.x -= step;
-      if (event.key === "ArrowRight") aimRef.current.x += step;
-      if (event.key === "ArrowUp") aimRef.current.y -= step;
-      if (event.key === "ArrowDown") aimRef.current.y += step;
+      if (event.key === "ArrowLeft") targetAimRef.current.x = Math.max(-1.06, targetAimRef.current.x - step);
+      if (event.key === "ArrowRight") targetAimRef.current.x = Math.min(1.06, targetAimRef.current.x + step);
+      if (event.key === "ArrowUp") targetAimRef.current.y = Math.max(-1.06, targetAimRef.current.y - step);
+      if (event.key === "ArrowDown") targetAimRef.current.y = Math.min(1.06, targetAimRef.current.y + step);
       if (event.code === "Space" || event.key === "Enter") { event.preventDefault(); throwDart(); }
     };
 
@@ -386,8 +407,8 @@ export default function Home() {
         </aside>
         <div className="message-bubble" aria-live="polite">{message}</div>
         {streak > 1 && <div className="streak">🔥 {streak} HIT STREAK!</div>}
-        <div className="difficulty-chip">✦ AIM DRIFT</div>
-        <div className="instruction"><span>✥</span> MOVE TO AIM <b>•</b> HOLD STEADY <b>•</b> TAP TO THROW</div>
+        <div className="difficulty-chip">✦ HARD MODE · WIND ON</div>
+        <div className="instruction"><span>✥</span> MOVE TO AIM <b>•</b> TRACK RETICLE <b>•</b> TAP TO THROW</div>
 
         {gameOver && (
           <div className="game-over" role="dialog" aria-modal="true" aria-label="Round complete">

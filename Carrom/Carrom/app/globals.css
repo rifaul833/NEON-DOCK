@@ -91,6 +91,7 @@ button { cursor: pointer; }
   transition: transform .15s ease, box-shadow .15s ease;
 }
 .icon-button { width: 43px; height: 43px; border-radius: 50%; font-size: 22px; }
+.icon-button.sound-active { color: #fff8dc; background: #7655c5; }
 .reset-button { height: 43px; border-radius: 22px; padding: 0 19px; }
 .icon-button:hover, .reset-button:hover { transform: translateY(-2px); box-shadow: 0 7px 0 rgba(48,60,61,.22); }
 .icon-button:active, .reset-button:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(48,60,61,.24); }

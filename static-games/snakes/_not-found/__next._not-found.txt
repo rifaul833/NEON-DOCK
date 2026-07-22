@@ -2,4 +2,4 @@
 2:I[5109,["/games/snakes/_next/static/chunks/0b_utx~_qr7.t.js"],"default"]
 3:I[50352,["/games/snakes/_next/static/chunks/0b_utx~_qr7.t.js"],"default"]
 4:[]
-0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"yC1RZ8sVZfFSQjvtM3Prd"}
+0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"hIuWInWiwZpso8jvM-o2l"}

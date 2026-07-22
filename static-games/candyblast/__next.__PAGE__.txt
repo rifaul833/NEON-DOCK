@@ -1,9 +1,9 @@
 1:"$Sreact.fragment"
 2:I[41262,["/games/candyblast/_next/static/chunks/161dvqd93llzu.js"],"ClientPageRoot"]
-3:I[43509,["/games/candyblast/_next/static/chunks/161dvqd93llzu.js","/games/candyblast/_next/static/chunks/0vn1d6r5s49kg.js"],"default"]
+3:I[43509,["/games/candyblast/_next/static/chunks/161dvqd93llzu.js","/games/candyblast/_next/static/chunks/12o5xlgj9ug2l.js"],"default"]
 6:I[43854,["/games/candyblast/_next/static/chunks/161dvqd93llzu.js"],"OutletBoundary"]
 7:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/games/candyblast/_next/static/chunks/0vn1d6r5s49kg.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"YPMxLpgMXDbgThFM-Jtm6"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/games/candyblast/_next/static/chunks/12o5xlgj9ug2l.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"571uVewR4fo0KNo_CS-10"}
 4:{}
 5:"$0:rsc:props:children:0:props:serverProvidedParams:params"
 8:null

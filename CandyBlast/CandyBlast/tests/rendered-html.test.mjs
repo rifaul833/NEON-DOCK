@@ -36,6 +36,8 @@ test("ships interactive game logic and social metadata", async () => {
   assert.match(page, /attemptSwap/);
   assert.match(page, /settleBoard/);
   assert.match(page, /aria-label="8 by 8 candy board"/);
+  assert.match(page, /aria-label="Unlimited moves"/);
+  assert.doesNotMatch(page, /START_MOVES|setMoves|moves === 0/);
   assert.match(layout, /openGraph/);
   assert.match(layout, /\/og\.png/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);

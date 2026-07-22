@@ -2,4 +2,4 @@
 2:I[75604,["/games/carrom/_next/static/chunks/0gw~e~idcvonz.js"],"default"]
 3:I[60515,["/games/carrom/_next/static/chunks/0gw~e~idcvonz.js"],"default"]
 4:[]
-0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"OCSBFupPrGZ9UCC1DoPfY"}
+0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"isPartial":false,"staleTime":300,"varyParams":"$W4","buildId":"rwjdISskTTVum9s8t0_Ta"}

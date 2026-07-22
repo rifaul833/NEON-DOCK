@@ -13,6 +13,13 @@ type Disc = {
   active: boolean;
 };
 
+type PointerInteraction = {
+  mode: "pending" | "position" | "aim";
+  startX: number;
+  startY: number;
+  strikerX: number;
+};
+
 const SIZE = 800;
 const WALL_MIN = 78;
 const WALL_MAX = 722;
@@ -63,8 +70,11 @@ export function CarromGame() {
   const discsRef = useRef<Disc[]>(makeDiscs());
   const draggingRef = useRef<{ x: number; y: number } | null>(null);
   const pointerRef = useRef<{ x: number; y: number } | null>(null);
+  const interactionRef = useRef<PointerInteraction | null>(null);
   const phaseRef = useRef<"player" | "moving" | "ai">("player");
   const audioRef = useRef<AudioContext | null>(null);
+  const musicTimerRef = useRef<number | null>(null);
+  const musicStepRef = useRef(0);
   const pocketedThisShot = useRef(0);
   const [playerScore, setPlayerScore] = useState(0);
   const [aiScore, setAiScore] = useState(0);
@@ -72,14 +82,68 @@ export function CarromGame() {
   const [soundOn, setSoundOn] = useState(true);
   const [message, setMessage] = useState("Your turn — drag the striker and let go!");
 
+  const getAudioContext = useCallback(() => {
+    const AudioCtor = window.AudioContext ||
+      (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = audioRef.current || new AudioCtor();
+    audioRef.current = ctx;
+    if (ctx.state === "suspended") void ctx.resume();
+    return ctx;
+  }, []);
+
+  const playMusicNote = useCallback(() => {
+    try {
+      const ctx = getAudioContext();
+      const melody = [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 349.23];
+      const step = musicStepRef.current % melody.length;
+      musicStepRef.current += 1;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = melody[step];
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.025, ctx.currentTime + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.32);
+
+      if (step % 4 === 0) {
+        const bass = ctx.createOscillator();
+        const bassGain = ctx.createGain();
+        bass.type = "sine";
+        bass.frequency.value = step === 0 ? 130.81 : 146.83;
+        bassGain.gain.setValueAtTime(0.018, ctx.currentTime);
+        bassGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.65);
+        bass.connect(bassGain).connect(ctx.destination);
+        bass.start();
+        bass.stop(ctx.currentTime + 0.67);
+      }
+    } catch {
+      // Music is a progressive enhancement.
+    }
+  }, [getAudioContext]);
+
+  const startMusic = useCallback(() => {
+    if (musicTimerRef.current !== null) return;
+    playMusicNote();
+    musicTimerRef.current = window.setInterval(playMusicNote, 360);
+  }, [playMusicNote]);
+
+  const stopMusic = useCallback(() => {
+    if (musicTimerRef.current !== null) {
+      window.clearInterval(musicTimerRef.current);
+      musicTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => stopMusic(), [stopMusic]);
+
   const ping = useCallback(
     (frequency: number, duration = 0.05) => {
       if (!soundOn) return;
       try {
-        const AudioCtor = window.AudioContext ||
-          (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = audioRef.current || new AudioCtor();
-        audioRef.current = ctx;
+        const ctx = getAudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
@@ -93,20 +157,32 @@ export function CarromGame() {
         // Audio is optional; the game remains fully playable without it.
       }
     },
-    [soundOn]
+    [getAudioContext, soundOn]
   );
+
+  const toggleSound = useCallback(() => {
+    if (soundOn) {
+      stopMusic();
+      setSoundOn(false);
+    } else {
+      setSoundOn(true);
+      startMusic();
+    }
+  }, [soundOn, startMusic, stopMusic]);
 
   const resetGame = useCallback(() => {
     discsRef.current = makeDiscs();
     phaseRef.current = "player";
     draggingRef.current = null;
     pointerRef.current = null;
+    interactionRef.current = null;
     pocketedThisShot.current = 0;
     setPlayerScore(0);
     setAiScore(0);
     setTurn("you");
-    setMessage("Fresh board! Drag the striker and let go.");
-  }, []);
+    setMessage("Fresh board! Slide the striker, then pull back to shoot.");
+    if (soundOn) startMusic();
+  }, [soundOn, startMusic]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -252,6 +328,42 @@ export function CarromGame() {
       ctx.restore();
     };
 
+    const drawPlacementGuide = () => {
+      if (phaseRef.current !== "player") return;
+      const striker = discsRef.current.find((d) => d.kind === "striker" && d.active);
+      if (!striker) return;
+      ctx.save();
+      ctx.strokeStyle = "rgba(54, 126, 122, .62)";
+      ctx.lineWidth = 5;
+      ctx.setLineDash([9, 9]);
+      ctx.beginPath();
+      ctx.moveTo(205, 680);
+      ctx.lineTo(595, 680);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(54, 126, 122, .82)";
+      ctx.beginPath();
+      ctx.moveTo(190, 680);
+      ctx.lineTo(211, 668);
+      ctx.lineTo(211, 692);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(610, 680);
+      ctx.lineTo(589, 668);
+      ctx.lineTo(589, 692);
+      ctx.closePath();
+      ctx.fill();
+      if (interactionRef.current?.mode === "position") {
+        ctx.beginPath();
+        ctx.arc(striker.x, striker.y, 34, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255,255,255,.9)";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+
     const pocket = (disc: Disc) => {
       disc.active = false;
       disc.vx = 0;
@@ -376,6 +488,7 @@ export function CarromGame() {
     const frame = () => {
       const moving = update();
       drawBoard();
+      drawPlacementGuide();
       discsRef.current.forEach(drawDisc);
       drawAim();
       if (phaseRef.current === "moving") {
@@ -401,23 +514,66 @@ export function CarromGame() {
 
   const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (phaseRef.current !== "player") return;
+    if (soundOn) startMusic();
     const point = pointFromEvent(event);
     const striker = discsRef.current.find((d) => d.kind === "striker" && d.active);
-    if (!striker || Math.hypot(point.x - striker.x, point.y - striker.y) > 65) return;
+    if (!striker) return;
+    const onStriker = Math.hypot(point.x - striker.x, point.y - striker.y) <= 65;
+    const onBaseline = point.y >= 600 && point.y <= 700 && point.x >= 174 && point.x <= 626;
+    if (!onStriker && !onBaseline) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    draggingRef.current = { x: striker.x, y: striker.y };
-    pointerRef.current = point;
-    setMessage("Pull back for power — release to strike!");
+    interactionRef.current = {
+      mode: onStriker ? "pending" : "position",
+      startX: point.x,
+      startY: point.y,
+      strikerX: striker.x,
+    };
+    if (onBaseline && !onStriker) {
+      striker.x = Math.max(202, Math.min(598, point.x));
+      interactionRef.current.strikerX = striker.x;
+      setMessage("Great angle! Slide to fine-tune, then drag from the striker to shoot.");
+    } else {
+      setMessage("Slide sideways to place — or pull away to aim!");
+    }
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!draggingRef.current) return;
-    pointerRef.current = pointFromEvent(event);
+    const interaction = interactionRef.current;
+    if (!interaction || phaseRef.current !== "player") return;
+    const point = pointFromEvent(event);
+    const striker = discsRef.current.find((d) => d.kind === "striker" && d.active);
+    if (!striker) return;
+    const dx = point.x - interaction.startX;
+    const dy = point.y - interaction.startY;
+    if (interaction.mode === "pending" && Math.hypot(dx, dy) > 9) {
+      interaction.mode = Math.abs(dx) > Math.abs(dy) * 1.25 && Math.abs(dy) < 38 ? "position" : "aim";
+      if (interaction.mode === "aim") {
+        draggingRef.current = { x: striker.x, y: striker.y };
+        setMessage("Pull back for power — release to strike!");
+      }
+    }
+    if (interaction.mode === "position") {
+      striker.x = Math.max(202, Math.min(598, interaction.strikerX + dx));
+      striker.y = 648;
+      pointerRef.current = null;
+      setMessage("Move left or right to choose your angle.");
+    } else if (interaction.mode === "aim") {
+      pointerRef.current = point;
+    }
   };
 
   const onPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const interaction = interactionRef.current;
+    interactionRef.current = null;
+    if (!interaction || phaseRef.current !== "player") return;
+    if (interaction.mode === "position" || interaction.mode === "pending") {
+      draggingRef.current = null;
+      pointerRef.current = null;
+      setMessage("Position set! Now pull back from the striker to aim.");
+      return;
+    }
     const start = draggingRef.current;
-    if (!start || phaseRef.current !== "player") return;
+    if (!start) return;
     const end = pointFromEvent(event);
     const dx = start.x - end.x;
     const dy = start.y - end.y;
@@ -448,8 +604,8 @@ export function CarromGame() {
           <span>CARROM POP!</span>
         </a>
         <div className="header-actions">
-          <button className="icon-button" onClick={() => setSoundOn((v) => !v)} aria-label={soundOn ? "Mute sound" : "Turn sound on"}>
-            {soundOn ? "♪" : "×"}
+          <button className={`icon-button ${soundOn ? "sound-active" : ""}`} onClick={toggleSound} aria-label={soundOn ? "Mute music and sound effects" : "Turn music and sound effects on"} title={soundOn ? "Music and sound on" : "Music and sound off"}>
+            {soundOn ? "♫" : "×"}
           </button>
           <button className="reset-button" onClick={resetGame}>↻&nbsp; New game</button>
         </div>
@@ -475,13 +631,13 @@ export function CarromGame() {
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
-              onPointerCancel={() => { draggingRef.current = null; pointerRef.current = null; }}
-              aria-label="Playable carrom board. Drag back from the green striker and release to shoot."
+              onPointerCancel={() => { draggingRef.current = null; pointerRef.current = null; interactionRef.current = null; }}
+              aria-label="Playable carrom board. Slide the green striker left or right along your baseline, then drag back and release to shoot."
             />
           </div>
           <div className="coach-card" aria-live="polite">
             <span className="coach-icon">☝</span>
-            <div><strong>{message}</strong><span>Pull back from the green striker, aim, then release.</span></div>
+            <div><strong>{message}</strong><span>Slide sideways to position. Pull away to aim. Release to shoot.</span></div>
             <div className="power-legend"><i /><i /><i /><i /><i /></div>
           </div>
         </div>

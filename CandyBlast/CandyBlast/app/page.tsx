@@ -8,10 +8,9 @@ type CandyType = (typeof TYPES)[number];
 type Candy = { id: string; type: CandyType };
 type Position = { row: number; col: number };
 type Goals = Record<"berry" | "lemon" | "mint", number>;
-type SoundEffect = "tap" | "swap" | "match" | "error" | "hammer" | "shuffle" | "start" | "win" | "lose";
+type SoundEffect = "tap" | "swap" | "match" | "error" | "hammer" | "shuffle" | "start" | "win";
 
 const TARGET = 3000;
-const START_MOVES = 18;
 const GOAL_TARGETS: Goals = { berry: 12, lemon: 10, mint: 10 };
 const LABELS: Record<CandyType, string> = {
   berry: "Berry swirl",
@@ -91,7 +90,6 @@ export default function Home() {
   const [board, setBoard] = useState(() => makeBoard(42));
   const [selected, setSelected] = useState<Position | null>(null);
   const [score, setScore] = useState(0);
-  const [moves, setMoves] = useState(START_MOVES);
   const [goals, setGoals] = useState<Goals>({ berry: 0, lemon: 0, mint: 0 });
   const [busy, setBusy] = useState(false);
   const [burst, setBurst] = useState<Set<string>>(new Set());
@@ -102,7 +100,7 @@ export default function Home() {
   const [shuffleCount, setShuffleCount] = useState(2);
   const [hammerMode, setHammerMode] = useState(false);
   const [seed, setSeed] = useState(42);
-  const [gameState, setGameState] = useState<"playing" | "won" | "lost">("playing");
+  const [gameState, setGameState] = useState<"playing" | "won">("playing");
   const idRef = useRef(1);
   const audioRef = useRef<AudioContext | null>(null);
   const musicStepRef = useRef(0);
@@ -144,7 +142,6 @@ export default function Home() {
       shuffle: [392, 523, 659],
       start: [392, 523, 659, 784],
       win: [523, 659, 784, 1047],
-      lose: [392, 330, 262],
     };
     const spacing = effect === "tap" ? 0 : effect === "match" || effect === "win" ? 0.065 : 0.08;
     notes[effect].forEach((note, index) => {
@@ -249,7 +246,6 @@ export default function Home() {
       setBusy(false);
       return;
     }
-    setMoves((value) => Math.max(0, value - 1));
     boardRef.current = next;
     await settleBoard(next);
   }, [busy, gameState, playSound, settleBoard]);
@@ -306,7 +302,6 @@ export default function Home() {
     boardRef.current = next;
     setSelected(null);
     setScore(0);
-    setMoves(START_MOVES);
     setGoals({ berry: 0, lemon: 0, mint: 0 });
     setBusy(false);
     setBurst(new Set());
@@ -322,12 +317,10 @@ export default function Home() {
   useEffect(() => {
     const goalsDone = (Object.keys(GOAL_TARGETS) as (keyof Goals)[]).every((key) => goals[key] >= GOAL_TARGETS[key]);
     if (score >= TARGET && goalsDone && gameState === "playing") setGameState("won");
-    else if (moves === 0 && !busy && gameState === "playing") setGameState("lost");
-  }, [busy, gameState, goals, moves, score]);
+  }, [gameState, goals, score]);
 
   useEffect(() => {
     if (gameState === "won") playSound("win");
-    if (gameState === "lost") playSound("lose");
   }, [gameState, playSound]);
 
   const toggleSound = () => {
@@ -384,7 +377,7 @@ export default function Home() {
 
         <section className="board-column">
           <div className="board-topline">
-            <div className="moves-bubble"><span>Moves</span><strong>{moves}</strong></div>
+            <div className="moves-bubble" aria-label="Unlimited moves"><span>Moves</span><strong aria-hidden="true">∞</strong></div>
             <div className={`combo-badge ${combo > 1 ? "show" : ""}`}>Combo ×{combo}</div>
           </div>
           <div className="board-frame">
@@ -430,9 +423,9 @@ export default function Home() {
       {gameState !== "playing" && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="result-title">
           <div className="result-card">
-            <div className="result-candy" aria-hidden="true">{gameState === "won" ? "🏆" : "🍭"}</div>
-            <h2 id="result-title">{gameState === "won" ? "Sugar spectacular!" : "So close, sweetie!"}</h2>
-            <p>{gameState === "won" ? `You conquered Level 24 with ${score.toLocaleString()} points.` : `You scored ${score.toLocaleString()} points. One more try will do it!`}</p>
+            <div className="result-candy" aria-hidden="true">🏆</div>
+            <h2 id="result-title">Sugar spectacular!</h2>
+            <p>You conquered Level 24 with {score.toLocaleString()} points.</p>
             <button className="play-again" onClick={startNewGame}>Play again</button>
           </div>
         </div>
