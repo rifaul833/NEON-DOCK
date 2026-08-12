@@ -46,6 +46,9 @@ copyDir(path.join(ROOT, "shooting-car"), path.join(OUT, "games", "shootingcar"))
 // Rush Racing (Famobi WASM package, local stub)
 copyDir(path.join(ROOT, "rush-racing"), path.join(OUT, "games", "rushracing"));
 
+// Drift King (Babylon.js 3D drift game, local mirror)
+copyDir(path.join(ROOT, "Drift-King"), path.join(OUT, "games", "driftking"));
+
 // Prebuilt Next static exports
 if (!fs.existsSync(STATIC_GAMES)) {
   console.error("Missing static-games/. Run: node scripts/build-static-games.mjs");
@@ -179,6 +182,16 @@ const catalog = [
     cover: "/covers/rushracing.jpg",
     playUrl: "/games/rushracing/game/index.html",
   },
+  {
+    id: "driftking",
+    title: "Drift King",
+    subtitle: "Hold to turn right, release to turn left — drift to the top",
+    category: "Racing",
+    controls: "Hold / Release",
+    accent: "#ffb347",
+    cover: "/covers/driftking.jpg",
+    playUrl: "/games/driftking/game/index.html",
+  },
 ];
 
 const extraCovers = [
@@ -191,6 +204,7 @@ const extraCovers = [
   ["launcher/public/covers/highhills.jpg", "covers/highhills.jpg"],
   ["launcher/public/covers/shootingcar.jpg", "covers/shootingcar.jpg"],
   ["launcher/public/covers/rushracing.jpg", "covers/rushracing.jpg"],
+  ["launcher/public/covers/driftking.jpg", "covers/driftking.jpg"],
 ];
 for (const [srcRel, destRel] of extraCovers) {
   const src = path.join(ROOT, srcRel);

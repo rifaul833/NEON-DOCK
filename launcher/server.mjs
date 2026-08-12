@@ -176,6 +176,19 @@ const GAMES = [
     entry: "game/index.html",
     cover: path.join(PUBLIC, "covers", "rushracing.jpg"),
   },
+  {
+    id: "driftking",
+    title: "Drift King",
+    subtitle: "Hold to turn right, release to turn left — drift to the top",
+    category: "Racing",
+    controls: "Hold / Release",
+    accent: "#ffb347",
+    cwd: path.join(ROOT, "Drift-King"),
+    port: 4114,
+    kind: "static",
+    entry: "game/index.html",
+    cover: path.join(PUBLIC, "covers", "driftking.jpg"),
+  },
 ];
 
 /** @type {Map<string, { child: import('node:child_process').ChildProcess | null, status: 'stopped' | 'starting' | 'running' | 'error', error?: string, startedAt?: number }>} */

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<!-- Mirrored from previews.customer.envatousercontent.com/files/732852420/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 12 Aug 2026 05:04:12 GMT -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Drift King</title>
+    <link rel="stylesheet" href="fonts/fonts.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Babylon.js Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Death flash overlay -->
+    <div id="deathFlash" class="death-flash hidden"></div>
+
+    <!-- HUD Overlay -->
+    <div id="hud" class="hud hidden">
+        <div class="hud-left">
+            <div class="coin-display">
+                <div class="coin-icon">
+                    <div class="coin-inner"></div>
+                </div>
+                <span class="coin-count">0</span>
+            </div>
+            <!-- Power-up indicators -->
+            <div id="powerUpHud" class="powerup-hud"></div>
+        </div>
+        <div class="hud-center">
+            <div class="score-display">0</div>
+            <div class="combo-display hidden" id="comboDisplay">
+                <span class="combo-value">x1</span>
+            </div>
+        </div>
+        <div class="hud-right">
+            <button class="pause-btn" id="pauseBtn">
+                <div class="pause-icon">
+                    <span></span>
+                    <span></span>
+                </div>
+            </button>
+        </div>
+        <!-- Level progress bar -->
+        <div class="level-progress-container hidden" id="levelProgressContainer">
+            <div class="level-progress-bar" id="levelProgressBar"></div>
+        </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="overlay hidden">
+        <div class="lobby-bg"></div>
+        <div id="lobbyParticles"></div>
+        <button class="lobby-settings-btn" id="lobbySettingsBtn">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z" fill="rgba(255,255,255,0.7)"/></svg>
+        </button>
+        <div class="lobby-content">
+            <div class="game-title">
+                <div class="title-line title-drift">DRIFT</div>
+                <div class="title-line title-boss">BOSS</div>
+            </div>
+
+            <!-- 3D car preview area (transparent, Babylon renders behind) -->
+            <div class="lobby-car-area">
+                <div class="lobby-pedestal-glow"></div>
+            </div>
+
+            <!-- Car carousel -->
+            <div class="lobby-carousel">
+                <button class="carousel-arrow carousel-left" id="carLeft">
+                    <svg viewBox="0 0 24 24" width="28" height="28"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="#fff"/></svg>
+                </button>
+                <div class="carousel-info">
+                    <div class="carousel-car-name" id="carName">Classic</div>
+                    <div class="carousel-car-desc" id="carDesc">The original drifter</div>
+                </div>
+                <button class="carousel-arrow carousel-right" id="carRight">
+                    <svg viewBox="0 0 24 24" width="28" height="28"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" fill="#fff"/></svg>
+                </button>
+            </div>
+
+            <!-- Car action (buy/select/selected) -->
+            <div class="lobby-car-action" id="carAction">
+                <div class="car-price-tag hidden" id="carPriceTag">
+                    <div class="coin-icon small">
+                        <div class="coin-inner"></div>
+                    </div>
+                    <span class="car-price-value" id="carPriceValue">150</span>
+                </div>
+                <button class="action-btn buy-btn hidden" id="buyBtn">
+                    <svg class="lock-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM12 17c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" fill="#fff"/></svg>
+                    <span id="buyBtnText" data-i18n="buy">BUY</span>
+                </button>
+                <button class="action-btn select-btn hidden" id="selectBtn" data-i18n="select">SELECT</button>
+                <div class="selected-badge hidden" id="selectedBadge">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#4ecca3"/></svg>
+                    <span data-i18n="selected">SELECTED</span>
+                </div>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="lobby-stats">
+                <div class="lobby-stat lobby-coins">
+                    <div class="coin-icon">
+                        <div class="coin-inner"></div>
+                    </div>
+                    <span class="lobby-coin-count" id="lobbyCoins">0</span>
+                </div>
+                <div class="lobby-stat lobby-best">
+                    <svg class="hs-trophy-svg" viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M5 3h14v2h-1.05A7.5 7.5 0 0112 14.93 7.5 7.5 0 015.05 5H4V3h1zm2.05 2a5.5 5.5 0 004.45 7.9V15h-2v2h5v-2h-2v-2.1A5.5 5.5 0 0016.95 5H7.05zM3 5H1v4a3 3 0 003 3h1.05A7.47 7.47 0 013 7.5V5zm18 0h2v4a3 3 0 01-3 3h-1.05A7.47 7.47 0 0121 7.5V5zM8 19h8v2H8v-2z" fill="url(#trophyGradLobby)"/>
+                        <defs>
+                            <linearGradient id="trophyGradLobby" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ffd54f"/>
+                                <stop offset="100%" stop-color="#ff8f00"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span class="lobby-best-label" data-i18n="best">BEST</span>
+                    <span class="lobby-best-value" id="lobbyBest">0</span>
+                </div>
+            </div>
+
+            <!-- Start button -->
+            <button class="play-btn lobby-play-btn" id="lobbyPlayBtn">
+                <span class="play-btn-text" data-i18n="start_game">START GAME</span>
+                <div class="play-btn-shine"></div>
+            </button>
+
+            <div class="start-hint" data-i18n="hint">Hold to turn right, release to turn left</div>
+        </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pauseScreen" class="overlay hidden">
+        <div class="pause-content">
+            <div class="pause-title" data-i18n="paused">PAUSED</div>
+            <button class="menu-btn resume-btn" id="resumeBtn">
+                <span data-i18n="resume">RESUME</span>
+            </button>
+            <button class="menu-btn restart-btn" id="restartBtn">
+                <span data-i18n="restart">RESTART</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="overlay hidden">
+        <div class="gameover-content">
+            <div class="gameover-title">
+                <div class="go-line go-line-game" data-i18n="game">GAME</div>
+                <div class="go-line go-line-over" data-i18n="over">OVER</div>
+            </div>
+
+            <!-- Score card -->
+            <div class="go-card">
+                <div class="go-score-section">
+                    <div class="go-score-label" data-i18n="score">SCORE</div>
+                    <div class="final-score-value">0</div>
+                </div>
+
+                <div class="go-divider"></div>
+
+                <div class="go-stats-row">
+                    <div class="go-stat">
+                        <div class="coin-icon small">
+                            <div class="coin-inner"></div>
+                        </div>
+                        <span class="go-earned-label">+</span>
+                        <span class="final-coin-count">0</span>
+                    </div>
+
+                    <div class="go-stat go-best-stat">
+                        <svg class="go-trophy-svg" viewBox="0 0 24 24" width="18" height="18">
+                            <path d="M5 3h14v2h-1.05A7.5 7.5 0 0112 14.93 7.5 7.5 0 015.05 5H4V3h1zm2.05 2a5.5 5.5 0 004.45 7.9V15h-2v2h5v-2h-2v-2.1A5.5 5.5 0 0016.95 5H7.05zM3 5H1v4a3 3 0 003 3h1.05A7.47 7.47 0 013 7.5V5zm18 0h2v4a3 3 0 01-3 3h-1.05A7.47 7.47 0 0121 7.5V5zM8 19h8v2H8v-2z" fill="url(#trophyGrad2)"/>
+                            <defs>
+                                <linearGradient id="trophyGrad2" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#ffd54f"/>
+                                    <stop offset="100%" stop-color="#ff8f00"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <span class="go-best-label" data-i18n="best">BEST</span>
+                        <span id="goHighScore" class="go-best-value">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW HIGH SCORE badge -->
+            <div id="newHighBadge" class="new-high-badge hidden">
+                <svg class="new-high-star" viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="#fff"/>
+                </svg>
+                <span data-i18n="new_best">NEW BEST!</span>
+                <svg class="new-high-star" viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="#fff"/>
+                </svg>
+            </div>
+
+            <div class="go-buttons" style="display:flex;gap:12px;justify-content:center;margin-top:16px;">
+                <button class="menu-btn play-again-btn" id="goReplayBtn" style="display:none;">
+                    <span data-i18n="replay">REPLAY</span>
+                </button>
+                <button class="menu-btn play-again-btn" id="playAgainBtn">
+                    <span id="playAgainBtnText">LOBBY</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Select Screen -->
+    <div id="levelSelectScreen" class="overlay hidden">
+        <div class="ls-bg"></div>
+        <div class="ls-container">
+            <div class="ls-header">
+                <button class="ls-back-btn" id="lsBackBtn">
+                    <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
+                </button>
+                <div class="ls-title" data-i18n="levels">LEVELS</div>
+                <div class="ls-total-stars">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="#ffd54f"/></svg>
+                    <span id="lsTotalStars">0/300</span>
+                </div>
+            </div>
+            <div class="ls-scroller" id="lsScroller"></div>
+        </div>
+    </div>
+
+    <!-- Level Complete Screen -->
+    <div id="levelCompleteScreen" class="overlay hidden">
+        <div class="lc-content">
+            <div class="lc-title" data-i18n="level_complete">LEVEL COMPLETE!</div>
+            <div class="lc-stars">
+                <svg class="lc-star" viewBox="0 0 24 24" width="56" height="56"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="#555"/></svg>
+                <svg class="lc-star" viewBox="0 0 24 24" width="56" height="56"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="#555"/></svg>
+                <svg class="lc-star" viewBox="0 0 24 24" width="56" height="56"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="#555"/></svg>
+            </div>
+            <div class="lc-info" id="lcInfo">World 1 — Level 1</div>
+            <div class="lc-coin-stats" id="lcCoinStats">
+                <div class="coin-icon small"><div class="coin-inner"></div></div>
+                <span id="lcCoinsText">0 / 0</span>
+            </div>
+            <div class="lc-buttons">
+                <button class="menu-btn lc-next-btn" id="lcNextBtn"><span data-i18n="next_level">NEXT LEVEL</span></button>
+                <button class="menu-btn lc-replay-btn" id="lcReplayBtn"><span data-i18n="replay">REPLAY</span></button>
+                <button class="menu-btn lc-levels-btn" id="lcLevelsBtn"><span data-i18n="levels">LEVELS</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Start Banner -->
+    <div id="levelStartBanner" class="level-start-banner hidden">
+        <div class="lsb-world" id="lsbWorld">City</div>
+        <div class="lsb-level" id="lsbLevel">Level 1</div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settingsScreen" class="overlay hidden">
+        <div class="settings-container">
+            <div class="settings-header">
+                <button class="ls-back-btn" id="settingsBackBtn">
+                    <svg viewBox="0 0 24 24" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
+                </button>
+                <div class="settings-title" data-i18n="settings">SETTINGS</div>
+            </div>
+            <div class="settings-section-label" data-i18n="sound">SOUND</div>
+            <div class="settings-toggles">
+                <div class="settings-toggle-row" id="musicToggle">
+                    <span class="toggle-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+                    <span class="toggle-label" data-i18n="music">Music</span>
+                    <div class="toggle-switch">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+                <div class="settings-slider-row" id="musicVolumeRow">
+                    <span class="slider-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></span>
+                    <input type="range" class="volume-slider" id="musicVolumeSlider" min="0" max="100" value="20">
+                    <span class="slider-value" id="musicVolumeValue">20%</span>
+                </div>
+                <div class="settings-toggle-row" id="sfxToggle">
+                    <span class="toggle-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a3.5 3.5 0 0 1 0 4.95"/></svg></span>
+                    <span class="toggle-label" data-i18n="sfx">SFX</span>
+                    <div class="toggle-switch">
+                        <div class="toggle-knob"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section-label" data-i18n="language">LANGUAGE</div>
+            <div class="settings-lang-list">
+                <div class="settings-lang-item" data-lang="tr"><span class="settings-lang-flag">&#x1F1F9;&#x1F1F7;</span><span class="settings-lang-name">T&#252;rk&#231;e</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="en"><span class="settings-lang-flag">&#x1F1EC;&#x1F1E7;</span><span class="settings-lang-name">English</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="es"><span class="settings-lang-flag">&#x1F1EA;&#x1F1F8;</span><span class="settings-lang-name">Espa&#241;ol</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="pt"><span class="settings-lang-flag">&#x1F1E7;&#x1F1F7;</span><span class="settings-lang-name">Portugu&#234;s</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="fr"><span class="settings-lang-flag">&#x1F1EB;&#x1F1F7;</span><span class="settings-lang-name">Fran&#231;ais</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="de"><span class="settings-lang-flag">&#x1F1E9;&#x1F1EA;</span><span class="settings-lang-name">Deutsch</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="it"><span class="settings-lang-flag">&#x1F1EE;&#x1F1F9;</span><span class="settings-lang-name">Italiano</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="ru"><span class="settings-lang-flag">&#x1F1F7;&#x1F1FA;</span><span class="settings-lang-name">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="ja"><span class="settings-lang-flag">&#x1F1EF;&#x1F1F5;</span><span class="settings-lang-name">&#26085;&#26412;&#35486;</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="ko"><span class="settings-lang-flag">&#x1F1F0;&#x1F1F7;</span><span class="settings-lang-name">&#54620;&#44397;&#50612;</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="zh"><span class="settings-lang-flag">&#x1F1E8;&#x1F1F3;</span><span class="settings-lang-name">&#20013;&#25991;</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="ar"><span class="settings-lang-flag">&#x1F1F8;&#x1F1E6;</span><span class="settings-lang-name">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="hi"><span class="settings-lang-flag">&#x1F1EE;&#x1F1F3;</span><span class="settings-lang-name">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="nl"><span class="settings-lang-flag">&#x1F1F3;&#x1F1F1;</span><span class="settings-lang-name">Nederlands</span><span class="settings-lang-check">&#10003;</span></div>
+                <div class="settings-lang-item" data-lang="pl"><span class="settings-lang-flag">&#x1F1F5;&#x1F1F1;</span><span class="settings-lang-name">Polski</span><span class="settings-lang-check">&#10003;</span></div>
+            </div>
+            <button class="settings-reset-btn" id="settingsResetBtn" data-i18n="reset_storage">RESET ALL DATA</button>
+        </div>
+    </div>
+
+    <!-- All Complete Screen -->
+    <div id="allCompleteScreen" class="overlay hidden">
+        <div class="ac-container">
+            <svg class="ac-trophy" viewBox="0 0 64 64" width="120" height="120">
+                <defs>
+                    <linearGradient id="acTrophyGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#FFD700"/>
+                        <stop offset="50%" stop-color="#FFA500"/>
+                        <stop offset="100%" stop-color="#FFD700"/>
+                    </linearGradient>
+                </defs>
+                <path d="M16 8h32v6h-2a18 18 0 01-12 17v5h6v4H24v-4h6v-5A18 18 0 0118 14h-2V8zm4 6a14 14 0 0012 13.5V28h0v-.5A14 14 0 0044 14H20zM10 14H6v8a8 8 0 006 7.75V28h2.1A20 20 0 0110 18v-4zm44 0h4v8a8 8 0 01-6 7.75V28h-2.1A20 20 0 0054 18v-4zM20 42h24v4H20v-4z" fill="url(#acTrophyGrad)"/>
+                <path d="M28 12h8v2h-8z" fill="rgba(255,255,255,0.4)"/>
+            </svg>
+
+            <h1 class="ac-title" data-i18n="all_complete_title">ALL LEVELS COMPLETE!</h1>
+            <p class="ac-msg" data-i18n="all_complete_msg">You conquered every challenge!</p>
+
+            <div class="ac-star-card">
+                <span class="ac-star-icon">⭐</span>
+                <span class="ac-star-label" data-i18n="total_stars">Total Stars</span>
+                <span class="ac-star-count" id="acStarCount">210/210</span>
+            </div>
+
+            <button class="ac-btn ac-btn-primary" id="acLobbyBtn" data-i18n="back_to_lobby">Back to Lobby</button>
+            <button class="ac-btn ac-btn-secondary" id="acViewLevelsBtn" data-i18n="view_levels">View Levels</button>
+            <button class="ac-btn ac-btn-danger" id="acResetBtn" data-i18n="reset_storage">Reset All Data</button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="overlay loading-overlay">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <div class="title-line title-drift loading-drift">DRIFT</div>
+                <div class="title-line title-boss loading-boss">BOSS</div>
+            </div>
+            <div id="loadingProgress" class="loading-progress-area">
+                <div class="loading-bar-container">
+                    <div class="loading-bar" id="loadingBar"></div>
+                </div>
+                <div class="loading-text" data-i18n="loading">Loading...</div>
+            </div>
+            <button class="play-btn tap-to-start-btn hidden" id="tapToStartBtn">
+                <span class="play-btn-text" data-i18n="tap_to_start">TAP TO START</span>
+                <div class="play-btn-shine"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Confetti container for purchases -->
+    <div id="confettiContainer" class="confetti-container"></div>
+
+    <script src="vendor/babylon.js"></script>
+    <script src="vendor/babylonjs.loaders.min.js"></script>
+    <script src="vendor/gsap.min.js"></script>
+    <script src="i18n.js?v=4"></script>
+    <script src="cars.js?v=4"></script>
+    <script src="car-models.js?v=4"></script>
+    <script src="audio.js?v=4"></script>
+    <script src="levels.js?v=4"></script>
+    <script src="obstacles.js?v=4"></script>
+    <script src="ui.js?v=4"></script>
+    <script src="levelSelect.js?v=4"></script>
+    <script src="lobby.js?v=4"></script>
+    <script src="game.js?v=4"></script>
+</body>
+
+<!-- Mirrored from previews.customer.envatousercontent.com/files/732852420/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 12 Aug 2026 05:04:16 GMT -->
+</html>
