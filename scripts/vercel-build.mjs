@@ -52,6 +52,9 @@ copyDir(path.join(ROOT, "Drift-King"), path.join(OUT, "games", "driftking"));
 // 8 Ball Billiards (Famobi HTML5 package, local stub)
 copyDir(path.join(ROOT, "8-ball-pool"), path.join(OUT, "games", "8ball"));
 
+// Fall Cars (Three.js color battle arena)
+copyDir(path.join(ROOT, "Fall-Cars"), path.join(OUT, "games", "fallcars"));
+
 // Prebuilt Next static exports
 if (!fs.existsSync(STATIC_GAMES)) {
   console.error("Missing static-games/. Run: node scripts/build-static-games.mjs");
@@ -205,6 +208,16 @@ const catalog = [
     cover: "/covers/8ball.jpg",
     playUrl: "/games/8ball/game/index.html",
   },
+  {
+    id: "fallcars",
+    title: "Fall Cars",
+    subtitle: "Drive to the right color before the tiles fall away",
+    category: "Racing",
+    controls: "WASD / Arrows",
+    accent: "#ff6b35",
+    cover: "/covers/fallcars.jpg",
+    playUrl: "/games/fallcars/game/index.html",
+  },
 ];
 
 const extraCovers = [
@@ -219,6 +232,7 @@ const extraCovers = [
   ["launcher/public/covers/rushracing.jpg", "covers/rushracing.jpg"],
   ["launcher/public/covers/driftking.jpg", "covers/driftking.jpg"],
   ["launcher/public/covers/8ball.jpg", "covers/8ball.jpg"],
+  ["launcher/public/covers/fallcars.jpg", "covers/fallcars.jpg"],
 ];
 for (const [srcRel, destRel] of extraCovers) {
   const src = path.join(ROOT, srcRel);

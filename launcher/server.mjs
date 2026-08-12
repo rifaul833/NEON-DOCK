@@ -202,6 +202,19 @@ const GAMES = [
     entry: "game/index.html",
     cover: path.join(PUBLIC, "covers", "8ball.jpg"),
   },
+  {
+    id: "fallcars",
+    title: "Fall Cars",
+    subtitle: "Drive to the right color before the tiles fall away",
+    category: "Racing",
+    controls: "WASD / Arrows",
+    accent: "#ff6b35",
+    cwd: path.join(ROOT, "Fall-Cars"),
+    port: 4116,
+    kind: "static",
+    entry: "game/index.html",
+    cover: path.join(PUBLIC, "covers", "fallcars.jpg"),
+  },
 ];
 
 /** @type {Map<string, { child: import('node:child_process').ChildProcess | null, status: 'stopped' | 'starting' | 'running' | 'error', error?: string, startedAt?: number }>} */
