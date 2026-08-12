@@ -49,6 +49,9 @@ copyDir(path.join(ROOT, "rush-racing"), path.join(OUT, "games", "rushracing"));
 // Drift King (Babylon.js 3D drift game, local mirror)
 copyDir(path.join(ROOT, "Drift-King"), path.join(OUT, "games", "driftking"));
 
+// 8 Ball Billiards (Famobi HTML5 package, local stub)
+copyDir(path.join(ROOT, "8-ball-pool"), path.join(OUT, "games", "8ball"));
+
 // Prebuilt Next static exports
 if (!fs.existsSync(STATIC_GAMES)) {
   console.error("Missing static-games/. Run: node scripts/build-static-games.mjs");
@@ -192,6 +195,16 @@ const catalog = [
     cover: "/covers/driftking.jpg",
     playUrl: "/games/driftking/game/index.html",
   },
+  {
+    id: "8ball",
+    title: "8 Ball Billiards",
+    subtitle: "Classic 8-ball pool — aim, spin, and sink every ball",
+    category: "Sports",
+    controls: "Mouse / Touch",
+    accent: "#4aa3ff",
+    cover: "/covers/8ball.jpg",
+    playUrl: "/games/8ball/game/index.html",
+  },
 ];
 
 const extraCovers = [
@@ -205,6 +218,7 @@ const extraCovers = [
   ["launcher/public/covers/shootingcar.jpg", "covers/shootingcar.jpg"],
   ["launcher/public/covers/rushracing.jpg", "covers/rushracing.jpg"],
   ["launcher/public/covers/driftking.jpg", "covers/driftking.jpg"],
+  ["launcher/public/covers/8ball.jpg", "covers/8ball.jpg"],
 ];
 for (const [srcRel, destRel] of extraCovers) {
   const src = path.join(ROOT, srcRel);

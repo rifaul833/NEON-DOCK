@@ -189,6 +189,19 @@ const GAMES = [
     entry: "game/index.html",
     cover: path.join(PUBLIC, "covers", "driftking.jpg"),
   },
+  {
+    id: "8ball",
+    title: "8 Ball Billiards",
+    subtitle: "Classic 8-ball pool — aim, spin, and sink every ball",
+    category: "Sports",
+    controls: "Mouse / Touch",
+    accent: "#4aa3ff",
+    cwd: path.join(ROOT, "8-ball-pool"),
+    port: 4115,
+    kind: "static",
+    entry: "game/index.html",
+    cover: path.join(PUBLIC, "covers", "8ball.jpg"),
+  },
 ];
 
 /** @type {Map<string, { child: import('node:child_process').ChildProcess | null, status: 'stopped' | 'starting' | 'running' | 'error', error?: string, startedAt?: number }>} */
