@@ -214,7 +214,6 @@ loadState.preload = function(){
 	
 	game.load.bitmapFont('font7', 'assets/fonts/Font.png', 'assets/fonts/Font.fnt');
 
-	this.load.image('more_games', window.famobi.getBrandingButtonImage());
     //this.load.image('line', 'assets/img/line.png');
 	this.load.image('pockets', 'assets/img/pockets.png');
 	this.load.image('cloth', 'assets/img/cloth.png');
@@ -267,9 +266,6 @@ loadState.preload = function(){
 	this.load.image('cross', 'assets/img/cross.png');
 	this.load.image('tick', 'assets/img/tick.png');
 	this.load.image('gameController', 'assets/img/gameController.png');
-	this.load.image('famobi', 'assets/img/famobi.png');
-
-
 	this.load.audio('ballHit', ['assets/audio/ballHit2.wav', 'assets/audio/ballHit2.mp3']);
 	this.load.audio('cushionHit', ['assets/audio/cushionHit.wav', 'assets/audio/cushionHit.mp3']);
 	this.load.audio('pocketHit', ['assets/audio/pocketHit.wav', 'assets/audio/pocketHit.mp3']);

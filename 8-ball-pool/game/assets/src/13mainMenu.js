@@ -170,10 +170,6 @@ var menuState = {
 				menuInfo.pVAIButton.x = 0;
 				menuInfo.pVAIButton.y = -game.height * .07;
 
-				menuInfo.famobiMoreGames.x = 0;
-				menuInfo.famobiMoreGames.y = game.height / 2 * 0.9;
-				menuInfo.famobiMoreGames.anchor = new Point(0.5, 1);
-
 				menuInfo.title.y = -(game.height / 2) * 0.5;
 
 
@@ -222,12 +218,6 @@ var menuState = {
 				menuInfo.pVAIButton.x = 0;
 				menuInfo.pVAIButton.y = -game.height * .05;
 
-				menuInfo.famobiMoreGames.x = -game.width / 2 * 0.9;
-				menuInfo.famobiMoreGames.y = game.height / 2 * 0.8;
-				menuInfo.famobiMoreGames.anchor = new Point(0, 1);
-
-				menuInfo.famobiMoreGames.y = menuInfo.copyright.y + (menuInfo.copyright.height * 0.5);
-
 				menuInfo.title.y = -(game.height / 2) * 0.6;
 
 
@@ -247,9 +237,6 @@ var menuState = {
 
 
 			menuInfo.rack.y = (game.height / 2) * 0.1;
-
-			menuInfo.copyright.x = game.width / 2 - 40;
-			menuInfo.copyright.y = game.height / 2 - 40;
 
 
 
@@ -287,15 +274,6 @@ var menuState = {
 		menuInfo.menuCanvas.y = game.height / 2;
 
 		menuInfo.menuVisible = true;
-
-
-		menuInfo.copyright = new Phaser.Sprite(game, 0, 0, 'famobi');
-		menuInfo.copyright.anchor = new Point(1, 1);
-		if(window.famobi.hasFeature("credits"))
-		{
-			menuInfo.menuCanvas.addChild(menuInfo.copyright);
-		}
-
 
 
 		//menuInfo.bgL = new Phaser.Sprite(game, 0, 0, 'bgL');
@@ -496,31 +474,6 @@ var menuState = {
 
 		//menuInfo.famobiMoreGames = new Phaser.Sprite(game, 60, 60, 'more_games');
 
-		menuInfo.famobiMoreGames = new Phaser.Button(game, 0, 0, 'more_games', famobiMoreGamesClick, this, 0, 0, 0, 0);
-
-		//console.log("sprite created");
-
-		menuInfo.menuCanvas.addChild(menuInfo.famobiMoreGames);
-
-		//console.log("sprite added");
-
-		menuInfo.famobiMoreGames.scale.x = 0.6;
-		menuInfo.famobiMoreGames.scale.y = 0.6;
-
-
-
-
-
-
-		function famobiMoreGamesClick() {
-			//console.log("clicked button");
-		    window.famobi.moreGamesLink();
-		}
-
-		//console.log("click event added");
-
-
-
 
 		this.resizeGame();
 
@@ -621,6 +574,9 @@ var menuState = {
 
 
 		function onPlayClick(){
+
+			Sound.unlockAudio();
+			Sound.setMasterMute(false);
 
 			hideMenuItems();
 
@@ -793,18 +749,20 @@ var menuState = {
 
 		
 		if(famobi.getVolume() == 0) {
-			// mute
 			Sound.setMasterMute(true);
 			isGameMuted = true;
-
-			// TODO:: update sound button
-			// ...
 		} else {
 			Sound.setMasterMute(false);
+			isGameMuted = false;
 		}
 
 		window.famobi.gameReady();
 		window.famobi.playerReady();
+
+		if(famobi.getVolume() != 0) {
+			Sound.setMasterMute(false);
+			Sound.on = true;
+		}
 	},
 
 	update: function(){

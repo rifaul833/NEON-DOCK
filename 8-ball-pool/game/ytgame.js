@@ -1,4 +1,7 @@
 (function (global) {
+  var audioEnabled = true;
+  var audioChangeHandler = null;
+
   var ytgame = {
     SDK_VERSION: "neon-dock-stub",
     game: {
@@ -10,6 +13,16 @@
       saveData: function () {
         return Promise.resolve();
       },
+    },
+    system: {
+      isAudioEnabled: function () {
+        return audioEnabled;
+      },
+      onAudioEnabledChange: function (handler) {
+        audioChangeHandler = handler;
+      },
+      onPause: function () {},
+      onResume: function () {},
     },
     ads: {
       AdResult: {

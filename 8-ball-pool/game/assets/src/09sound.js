@@ -34,30 +34,24 @@ Sound.Play = function(type, volume){
 	}
 }
 
-Sound.createNewAudioContext = function() {
-	console.log('create new audio context');
-	game.sound.context = new AudioContext();
-	game.sound.masterGain.disconnect();
+Sound.resumeAudio = function() {
+	try {
+		if (this.isSuspended()) {
+			game.sound.context.resume();
+		}
+	} catch(e) {}
+}
 
-	game.sound.masterGain = game.sound.context.createGain();
-	game.sound.masterGain.connect(game.sound.context.destination);
+Sound.unlockAudio = function() {
+	Sound.resumeAudio();
+	clearInterval(Sound.intervalId);
+	Sound.intervalId = undefined;
 }
 
 Sound.checkAudioContext = function() {
 	if (this.isSuspended()) {
-		console.log('is suspended');
 		this.startCheckingSuspended();
 	}
-
-	const oldCurrentTime = game.sound.context.currentTime;
-
-	setTimeout(() => {
-		const newCurrentTime = game.sound.context.currentTime;
-
-		if (oldCurrentTime === newCurrentTime) {
-			this.createNewAudioContext();
-		}
-	}, 1000);
 }
 
 Sound.startCheckingSuspended = function() {
@@ -75,5 +69,9 @@ Sound.startCheckingSuspended = function() {
 Sound.isSuspended = function() {
 	return game.sound.usingWebAudio && game.sound.context.state === 'suspended';
 }
+
+['pointerdown', 'mousedown', 'touchstart', 'keydown'].forEach(function(evt) {
+	document.addEventListener(evt, Sound.unlockAudio.bind(Sound), true);
+});
 
 setInterval(Sound.checkAudioContext.bind(Sound), 1000);

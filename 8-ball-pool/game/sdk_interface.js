@@ -75,11 +75,11 @@ const SDK_INTERFACE_SETTINGS = {
 	// features
 	features: {
 		auto_quality: false,
-		copyright: true,
-		credits: true,
+		copyright: false,
+		credits: false,
 		external_achievements: false,
 		external_leaderboard: false,
-		external_mute: true,
+		external_mute: false,
 		external_pause: false,
 		external_start: false,
 		forced_mode: false,
@@ -308,16 +308,19 @@ const SDK_INTERFACE_INIT = function() {
 			isMuted: false,
 			updateAudioState(state = null) {
 				try {
-					if(state == null) state = !!(state || ytgame?.system?.isAudioEnabled?.());
+					if(state == null) {
+						const platformAudio = ytgame?.system?.isAudioEnabled?.();
+						state = platformAudio === undefined ? true : !!platformAudio;
+					}
 					SDK_LOG(`Update mute state: ${state ? "\x1b[32menabled" : "\x1b[31mdisabled"}`);
 
 					if(!window.famobi.adapters) {
 						SDK_ERROR("famobi.adapter is not defined yet");
-						!state && (window.famobi.volume = 0);
+						window.famobi.volume = state ? 1 : 0;
 						return;
 					}
 
-					window.famobi.setVolume(1);
+					window.famobi.setVolume(state ? 1 : 0);
 
 					if(state) {
 						//Unmute Game
