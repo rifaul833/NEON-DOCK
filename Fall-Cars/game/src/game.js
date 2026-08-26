@@ -1486,6 +1486,15 @@ async function endGame(winner) {
   SESSION.gamesPlayed++;
   checkQuestProgress('wins',isH?1:0); checkQuestProgress('totalWins'); checkQuestProgress('totalGames'); checkQuestProgress('games');
   setTimeout(()=>{checkAchievements();checkMilestones();},500);
+
+  if (window.GameBoxIntegration && window.__gameboxSession?.matchActive) {
+    window.GameBoxIntegration.submitGameResult({
+      isWinner: !!isH,
+      score: G.round,
+      reason: isH ? "completed" : "forfeit",
+      stats: { mode: G.mode, rounds: G.round },
+    });
+  }
 }
 
 function resetGame(toMenu=false) {

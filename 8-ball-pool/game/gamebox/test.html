@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GameBox Integration Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    textarea, input { width: 100%; box-sizing: border-box; }
+    textarea { min-height: 120px; font-family: ui-monospace, monospace; }
+    button { margin-top: 8px; padding: 10px 14px; }
+    pre { background: #111; color: #d8ffe8; padding: 12px; overflow: auto; }
+    .ok { color: #0a7; }
+    .err { color: #c33; }
+  </style>
+  <script src="vendor/pako.min.js"></script>
+  <script src="crypto.js"></script>
+</head>
+<body>
+  <h1>GameBox Launch Token Test</h1>
+  <p>Paste a staging <code>encryptedString</code> from GameBox to verify decryption.</p>
+  <label>encryptedString</label>
+  <textarea id="token" placeholder="eyJ2IjoxLCJjdCI6..."></textarea>
+  <label>Decryption key</label>
+  <input id="key" value="J9k8L7m6N5p4Q3r2" />
+  <button id="decrypt">Decrypt</button>
+  <button id="roundtrip">Round-trip test</button>
+  <pre id="out">Ready.</pre>
+  <script>
+    const out = document.getElementById('out');
+  document.getElementById('decrypt').onclick = async () => {
+      out.textContent = 'Decrypting...';
+      try {
+        const result = await GameBoxCrypto.decryptToken(
+          document.getElementById('token').value.trim(),
+          document.getElementById('key').value.trim(),
+        );
+        out.innerHTML = '<span class="ok">Success</span>\n' + JSON.stringify(result, null, 2);
+      } catch (e) {
+        out.innerHTML = '<span class="err">Error: ' + e.message + '</span>';
+      }
+    };
+    document.getElementById('roundtrip').onclick = async () => {
+      const sample = {
+        success: true,
+        gameData: {
+          userId: 'test-user',
+          gameId: '181',
+          canPlay: true,
+          nakamaURl: 'https://nakama.stacknize.com',
+          matchmakingUrl: 'https://multiplayer.stacknize.com',
+          gameScoreAPIUrl: 'https://test-gamebox.stacknize.com/api/api/v1/tournaments/submitMultiplayerScore',
+          scoreEncryptionKey: 'scoreEncryptionKey',
+        },
+      };
+      try {
+        const enc = await GameBoxCrypto.encryptToken(sample, document.getElementById('key').value.trim());
+        const dec = await GameBoxCrypto.decryptToken(enc, document.getElementById('key').value.trim());
+        out.innerHTML = '<span class="ok">Round-trip OK</span>\n' + JSON.stringify(dec, null, 2);
+      } catch (e) {
+        out.innerHTML = '<span class="err">Round-trip failed: ' + e.message + '</span>';
+      }
+    };
+  </script>
+</body>
+</html>

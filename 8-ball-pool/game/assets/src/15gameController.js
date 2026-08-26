@@ -2333,6 +2333,18 @@ playState.update = function(){
 			);
 		}
 
+		if (window.GameBoxIntegration && window.__gameboxSession?.matchActive) {
+			const isWinner = gameInfo.winner === "p1";
+			promises.push(
+				window.GameBoxIntegration.submitGameResult({
+					isWinner: isWinner,
+					score: projectInfo.score,
+					reason: "completed",
+					stats: { winner: gameInfo.winner, mode: projectInfo.mode },
+				})
+			);
+		}
+
 		return Promise.all(promises);
 	}
 

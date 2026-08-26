@@ -1823,6 +1823,15 @@ function gameOver() {
     if (isNewHigh) { highScore = score; saveHighScore(highScore); }
     console.log("[gameOver] highScore:", highScore, "isNewHigh:", isNewHigh);
     showGameOverScreen(score, sessionCoins, isNewHigh);
+
+    if (window.GameBoxIntegration && window.__gameboxSession?.matchActive) {
+        window.GameBoxIntegration.submitGameResult({
+            isWinner: false,
+            score: score,
+            reason: "completed",
+            stats: { sessionCoins: sessionCoins, levelMode: !!levelMode },
+        });
+    }
 }
 
 // ===== INPUT =====

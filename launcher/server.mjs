@@ -398,13 +398,22 @@ async function startGame(id, { exclusive = true } = {}) {
       WRANGLER_LOG_PATH: path.join(game.cwd, ".wrangler", "wrangler.log"),
     });
   } else {
-    child = spawnCommand(game.cwd, "python3", [
-      "-m",
-      "http.server",
-      String(game.port),
-      "--bind",
-      "127.0.0.1",
-    ]);
+    const servePy = path.join(game.cwd, "serve.py");
+    if (fs.existsSync(servePy)) {
+      child = spawnCommand(game.cwd, "python3", [
+        servePy,
+        String(game.port),
+        "127.0.0.1",
+      ]);
+    } else {
+      child = spawnCommand(game.cwd, "python3", [
+        "-m",
+        "http.server",
+        String(game.port),
+        "--bind",
+        "127.0.0.1",
+      ]);
+    }
   }
 
   state.child = child;
@@ -656,6 +665,11 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 server.listen(LAUNCHER_PORT, "127.0.0.1", () => {
+  const catalogSrc = path.join(ROOT, "public", "games.json");
+  const catalogDest = path.join(PUBLIC, "games.json");
+  if (fs.existsSync(catalogSrc)) {
+    fs.copyFileSync(catalogSrc, catalogDest);
+  }
   console.log(`\n  NEON DOCK`);
   console.log(`  → http://127.0.0.1:${LAUNCHER_PORT}\n`);
   console.log(`  Click a card to play. Switching games auto-stops the previous one.`);

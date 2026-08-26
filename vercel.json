@@ -3,5 +3,11 @@
   "framework": null,
   "installCommand": "echo skip-install",
   "buildCommand": "node scripts/vercel-build.mjs",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "headers": [
+    {
+      "source": "/games/(.*)\\.wasm",
+      "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
+    }
+  ]
 }

@@ -5,9 +5,6 @@
     return Promise.resolve(result);
   }
 
-  var transparentGif =
-    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
   var storage = global.localStorage;
   var famobiStorage = {
     getItem: function (key) {
@@ -33,6 +30,12 @@
     },
   };
 
+  global.RushGutterWidth = function () {
+    var w = global.innerWidth || 1280;
+    if (w < 640) return Math.round(Math.max(56, w * 0.09));
+    return Math.round(Math.min(300, Math.max(110, w * 0.15)));
+  };
+
   global.famobi = {
     config: {},
     com: {},
@@ -48,7 +51,8 @@
       return "en";
     },
     getOffsets: function () {
-      return { top: 0, right: 0, bottom: 0, left: 0 };
+      var side = global.RushGutterWidth();
+      return { top: 0, right: side, bottom: 0, left: side };
     },
     getVolume: function () {
       return 1;
