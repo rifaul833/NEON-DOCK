@@ -26,6 +26,9 @@ npm-debug.log*
 .env.*
 !.env.example
 
+# Demo wallet overlay (local prototype)
+launcher/.demo-live.json
+
 # Editors
 .idea/
 .vscode/

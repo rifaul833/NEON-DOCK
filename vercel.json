@@ -4,6 +4,9 @@
   "installCommand": "echo skip-install",
   "buildCommand": "node scripts/vercel-build.mjs",
   "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin/index.html" }
+  ],
   "headers": [
     {
       "source": "/games/(.*)\\.wasm",

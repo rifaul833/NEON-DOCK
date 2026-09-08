@@ -5,6 +5,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createReadStream } from "node:fs";
+import {
+  getState,
+  recordMatchStart,
+  recordMatchEnd,
+  resetLive,
+} from "./demo-store.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -509,6 +515,7 @@ const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".jpg": "image/jpeg",
@@ -519,8 +526,15 @@ const MIME = {
   ".json": "application/json",
 };
 
+function applyCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
 function sendJson(res, status, data) {
   const body = JSON.stringify(data);
+  applyCors(res);
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
@@ -542,6 +556,7 @@ function serveFile(filePath, res) {
 function serveStatic(req, res) {
   let urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
   if (urlPath === "/") urlPath = "/index.html";
+  if (urlPath === "/admin" || urlPath === "/admin/") urlPath = "/admin/index.html";
   const filePath = path.normalize(path.join(PUBLIC, urlPath));
   if (!filePath.startsWith(PUBLIC)) {
     res.writeHead(403);
@@ -594,6 +609,38 @@ const server = http.createServer(async (req, res) => {
   const { pathname } = url;
 
   try {
+    applyCors(res);
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (req.method === "GET" && pathname === "/api/demo/state") {
+      sendJson(res, 200, getState());
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/api/demo/match-start") {
+      const body = await readBody(req);
+      const result = recordMatchStart(body);
+      sendJson(res, result.ok ? 200 : 400, result);
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/api/demo/match-end") {
+      const body = await readBody(req);
+      const result = recordMatchEnd(body);
+      sendJson(res, result.ok ? 200 : 400, result);
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/api/demo/reset") {
+      await readBody(req);
+      sendJson(res, 200, { ok: true, state: resetLive() });
+      return;
+    }
+
     if (req.method === "GET" && pathname === "/api/games") {
       sendJson(res, 200, { games: await snapshot(), active: activeGameId });
       return;

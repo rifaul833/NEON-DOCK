@@ -473,7 +473,7 @@
     let currentUrl = null;
     let launching = false;
 
-    const CATEGORIES = ["All", "Arcade", "Puzzle", "Racing", "Shooter", "Board"];
+    const CATEGORIES = ["All", "Arcade", "Puzzle", "Racing", "Shooter", "Board", "Sports", "Action"];
 
     function showToast(message, isError = false) {
       toast.textContent = message;
@@ -721,6 +721,11 @@
       }
       renderGrid();
     }
+
+    window.addEventListener("message", (event) => {
+      if (event.data?.type !== "neondock-demo") return;
+      fetch("/api/demo/state").catch(() => {});
+    });
 
     boot().catch((err) => {
       showToast(err.message || "Could not load games", true);
