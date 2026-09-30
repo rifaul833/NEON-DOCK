@@ -41,16 +41,6 @@
       "playUrl": "/games/darts/"
     },
     {
-      "id": "pool",
-      "title": "Happy Break!",
-      "subtitle": "Cheerful pool — aim, shoot, clear the table",
-      "category": "Arcade",
-      "controls": "Mouse / Touch",
-      "accent": "#3ecf8e",
-      "cover": "/covers/pool.png",
-      "playUrl": "/games/pool/"
-    },
-    {
       "id": "snakes",
       "title": "Snake & Ladder",
       "subtitle": "Race to the top — climb ladders or slide down",
@@ -79,16 +69,6 @@
       "accent": "#5ec8ff",
       "cover": "/covers/bubbleshooter.png",
       "playUrl": "/games/bubbleshooter/"
-    },
-    {
-      "id": "popper",
-      "title": "Pop! Party",
-      "subtitle": "Tap bubbles, chain combos, dodge bombs",
-      "category": "Arcade",
-      "controls": "Mouse / Touch",
-      "accent": "#ff6bcb",
-      "cover": "/covers/popper.png",
-      "playUrl": "/games/popper/"
     },
     {
       "id": "highhills",

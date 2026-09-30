@@ -84,18 +84,6 @@ const GAMES = [
     cover: path.join(PUBLIC, "covers", "darts.png"),
   },
   {
-    id: "pool",
-    title: "Happy Break!",
-    subtitle: "Cheerful pool — aim, shoot, clear the table",
-    category: "Arcade",
-    controls: "Mouse / Touch",
-    accent: "#3ecf8e",
-    cwd: path.join(ROOT, "Pool", "Pool"),
-    port: 4105,
-    kind: "vinext",
-    cover: path.join(ROOT, "Pool", "Pool", "public", "og.png"),
-  },
-  {
     id: "snakes",
     title: "Snake & Ladder",
     subtitle: "Race to the top — climb ladders or slide down",
@@ -130,18 +118,6 @@ const GAMES = [
     port: 4109,
     kind: "vinext",
     cover: path.join(PUBLIC, "covers", "bubbleshooter.png"),
-  },
-  {
-    id: "popper",
-    title: "Pop! Party",
-    subtitle: "Tap bubbles, chain combos, dodge bombs",
-    category: "Arcade",
-    controls: "Mouse / Touch",
-    accent: "#ff6bcb",
-    cwd: path.join(ROOT, "Popper", "Popper"),
-    port: 4110,
-    kind: "vinext",
-    cover: path.join(PUBLIC, "covers", "popper.png"),
   },
   {
     id: "highhills",
@@ -267,6 +243,50 @@ function spawnCommand(cwd, command, args, env = {}) {
     shell: false,
     detached: true,
   });
+}
+
+function runCommand(cwd, command, args, timeoutMs = 900000) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"], shell: false });
+    let out = "";
+    child.stdout.on("data", (buf) => {
+      out = (out + buf).slice(-2000);
+    });
+    child.stderr.on("data", (buf) => {
+      out = (out + buf).slice(-2000);
+    });
+    const timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({ ok: false, out: out + String(err) });
+    });
+    child.on("exit", (code) => {
+      clearTimeout(timer);
+      resolve({ ok: code === 0, out });
+    });
+  });
+}
+
+/**
+ * vinext games are Vite apps, so the dev server must come from the project's own
+ * pinned dependencies. Falling back to a bare `npx vinext` pulls whatever version
+ * is newest on the registry, which no longer ships a dev server.
+ */
+async function ensureViteCli(game) {
+  const viteBin = path.join(game.cwd, "node_modules", ".bin", "vite");
+  if (fs.existsSync(viteBin)) return viteBin;
+
+  const rel = path.relative(ROOT, game.cwd);
+  console.log(`[${game.id}] installing dependencies (first run only)…`);
+  const result = await runCommand(game.cwd, "npm", ["install", "--no-audit", "--no-fund"]);
+  if (!fs.existsSync(viteBin)) {
+    throw new Error(
+      `${game.title} is missing its local Vite CLI. Run "npm install" in ${rel} and try again.${
+        result.out ? ` (${result.out.trim().slice(-160)})` : ""
+      }`,
+    );
+  }
+  return viteBin;
 }
 
 function killProcessTree(child) {
@@ -395,12 +415,16 @@ async function startGame(id, { exclusive = true } = {}) {
 
   let child;
   if (game.kind === "vinext") {
-    const vinextBin = path.join(game.cwd, "node_modules", ".bin", "vinext");
-    const cmd = fs.existsSync(vinextBin) ? vinextBin : "npx";
-    const args = fs.existsSync(vinextBin)
-      ? ["dev", "-p", String(game.port), "-H", "127.0.0.1"]
-      : ["vinext", "dev", "-p", String(game.port), "-H", "127.0.0.1"];
-    child = spawnCommand(game.cwd, cmd, args, {
+    let viteBin;
+    try {
+      viteBin = await ensureViteCli(game);
+    } catch (err) {
+      state.status = "error";
+      state.error = err instanceof Error ? err.message : String(err);
+      if (activeGameId === id) activeGameId = null;
+      throw err;
+    }
+    child = spawnCommand(game.cwd, viteBin, ["dev", "--port", String(game.port), "--host", "127.0.0.1"], {
       WRANGLER_LOG_PATH: path.join(game.cwd, ".wrangler", "wrangler.log"),
     });
   } else {

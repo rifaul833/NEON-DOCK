@@ -60,9 +60,15 @@ if (!fs.existsSync(STATIC_GAMES)) {
   console.error("Missing static-games/. Run: node scripts/build-static-games.mjs");
   process.exit(1);
 }
+// Built but unpublished games — kept on disk, not shipped.
+const UNPUBLISHED = new Set(["pool", "popper"]);
 for (const id of fs.readdirSync(STATIC_GAMES)) {
   const src = path.join(STATIC_GAMES, id);
   if (!fs.statSync(src).isDirectory()) continue;
+  if (UNPUBLISHED.has(id)) {
+    console.log(`skipped game: ${id}`);
+    continue;
+  }
   copyDir(src, path.join(OUT, "games", id));
   console.log(`packed game: ${id}`);
 }
@@ -109,16 +115,6 @@ const catalog = [
     playUrl: "/games/darts/",
   },
   {
-    id: "pool",
-    title: "Happy Break!",
-    subtitle: "Cheerful pool — aim, shoot, clear the table",
-    category: "Arcade",
-    controls: "Mouse / Touch",
-    accent: "#3ecf8e",
-    cover: "/covers/pool.png",
-    playUrl: "/games/pool/",
-  },
-  {
     id: "snakes",
     title: "Snake & Ladder",
     subtitle: "Race to the top — climb ladders or slide down",
@@ -147,16 +143,6 @@ const catalog = [
     accent: "#5ec8ff",
     cover: "/covers/bubbleshooter.png",
     playUrl: "/games/bubbleshooter/",
-  },
-  {
-    id: "popper",
-    title: "Pop! Party",
-    subtitle: "Tap bubbles, chain combos, dodge bombs",
-    category: "Arcade",
-    controls: "Mouse / Touch",
-    accent: "#ff6bcb",
-    cover: "/covers/popper.png",
-    playUrl: "/games/popper/",
   },
   {
     id: "highhills",
@@ -224,9 +210,7 @@ const extraCovers = [
   ["Archery/Archery/public/desert-sunset.jpg", "covers/archery.jpg"],
   ["CandyBlast/CandyBlast/public/og.png", "covers/candyblast.png"],
   ["Carrom/Carrom/public/og.png", "covers/carrom.png"],
-  ["Pool/Pool/public/og.png", "covers/pool.png"],
   ["Bubble Shooter/Bubble Shooter/public/og.png", "covers/bubbleshooter.png"],
-  ["Popper/Popper/public/og.png", "covers/popper.png"],
   ["launcher/public/covers/highhills.jpg", "covers/highhills.jpg"],
   ["launcher/public/covers/shootingcar.jpg", "covers/shootingcar.jpg"],
   ["launcher/public/covers/rushracing.jpg", "covers/rushracing.jpg"],
