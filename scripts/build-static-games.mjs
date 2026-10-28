@@ -17,11 +17,9 @@ const GAMES = [
   { id: "candyblast", dir: "CandyBlast/CandyBlast", title: "CandyBlast — Match, Pop & Smile", description: "A deliciously playful match-3 puzzle game in a glossy candy kingdom." },
   { id: "carrom", dir: "Carrom/Carrom", title: "Carrom Pop! — Cartoon Carrom Game", description: "Cartoon carrom — flick and pocket the pieces." },
   { id: "darts", dir: "Darts/Darts", title: "Dart Dash! — Cartoon Darts", description: "Aim, throw, and chase a huge score in this playful 3D dart game." },
-  { id: "pool", dir: "Pool/Pool", title: "Happy Break! — Cartoon Pool", description: "Aim, shoot, and clear the table in this cheerful pool game." },
   { id: "snakes", dir: "SnakesAndLadder/SnakesAndLadder", title: "Snake & Ladder — Race to the Top!", description: "A colorful Snake & Ladder game — climb or slide." },
   { id: "ludo", dir: "Ludo/Ludo", title: "Ludo — Classic Race Home", description: "A polished four-player Ludo game with classic rules." },
   { id: "bubbleshooter", dir: "Bubble Shooter/Bubble Shooter", title: "Bubble Boom! — 3D Bubble Shooter", description: "A cheerful, cartoon-style 3D bubble shooter with music, combos, and bank shots." },
-  { id: "popper", dir: "Popper/Popper", title: "Pop! Party — Cartoon Bubble Popper", description: "Tap happy bubbles, chain huge combos, and dodge bombs in a joyful pop rush." },
 ];
 
 function rmrf(p) {
