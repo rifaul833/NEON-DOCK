@@ -252,7 +252,23 @@ export default function Home() {
     };
 
     const pointerMove = (e: PointerEvent) => aimFromEvent(e.clientX, e.clientY);
+    const swapBubbles = () => {
+      if (!runningRef.current || flyingRef.current) return;
+      const current = shotRef.current;
+      shotRef.current = nextRef.current;
+      nextRef.current = current;
+      playTone(523, .08, "square", .03);
+    };
     const pointerDown = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const nextX = width / 2 + radius * 2.25;
+      const nextY = cannonY + radius * 1.12;
+      if (Math.hypot(mx - nextX, my - nextY) < radius * 1.4) {
+        swapBubbles();
+        return;
+      }
       aimFromEvent(e.clientX, e.clientY);
       if (!runningRef.current || flyingRef.current) return;
       ensureAudio();
@@ -266,6 +282,10 @@ export default function Home() {
       if (e.key === "ArrowLeft") aimRef.current = { x: Math.max(-.9, aimRef.current.x - .06), y: 0 };
       if (e.key === "ArrowRight") aimRef.current = { x: Math.min(.9, aimRef.current.x + .06), y: 0 };
       aimRef.current.y = -Math.sqrt(1 - aimRef.current.x ** 2);
+      if ((e.key === "s" || e.key === "S") && runningRef.current && !flyingRef.current) {
+        e.preventDefault();
+        swapBubbles();
+      }
       if ((e.key === " " || e.key === "Enter") && runningRef.current && !flyingRef.current) {
         e.preventDefault(); pointerDown(new PointerEvent("pointerdown", { clientX: width / 2 + aimRef.current.x * 200, clientY: 0 }));
       }
@@ -281,19 +301,21 @@ export default function Home() {
       ctx.clearRect(0, 0, width, height);
 
       ctx.save();
-      ctx.strokeStyle = "rgba(255,255,255,.58)";
-      ctx.lineWidth = Math.max(3, radius * .16);
-      ctx.setLineDash([2, radius * .72]);
+      ctx.strokeStyle = "rgba(255,252,210,.95)";
+      ctx.lineWidth = Math.max(5, radius * .28);
+      ctx.setLineDash([radius * .5, radius * .22]);
       ctx.lineCap = "round";
+      ctx.shadowColor = "rgba(255,236,120,.75)";
+      ctx.shadowBlur = 10;
       ctx.beginPath();
       let px = width / 2, py = cannonY, vx = aimRef.current.x, vy = aimRef.current.y;
       ctx.moveTo(px, py);
-      for (let i = 0; i < 90; i++) {
+      for (let i = 0; i < 110; i++) {
         px += vx * radius * .17; py += vy * radius * .17;
-        if (px < radius) { px = radius; vx = Math.abs(vx); }
-        if (px > width - radius) { px = width - radius; vx = -Math.abs(vx); }
+        if (px < radius) { px = radius; vx = Math.abs(vx); ctx.lineTo(px, py); }
+        if (px > width - radius) { px = width - radius; vx = -Math.abs(vx); ctx.lineTo(px, py); }
         ctx.lineTo(px, py);
-        if (py < top || i > 42) break;
+        if (py < top || i > 58) break;
       }
       ctx.stroke(); ctx.restore();
 
@@ -319,7 +341,7 @@ export default function Home() {
       ctx.fillStyle = "rgba(50,38,91,.25)"; ctx.beginPath(); ctx.ellipse(width / 2, cannonY + radius * 1.45, radius * 1.45, radius * .42, 0, 0, TAU); ctx.fill();
       drawBubble(width / 2, cannonY, shotRef.current, 1.05);
       drawBubble(width / 2 + radius * 2.25, cannonY + radius * 1.12, nextRef.current, .62);
-      ctx.fillStyle = "rgba(38,29,69,.72)"; ctx.font = `800 ${Math.max(9, radius * .47)}px sans-serif`; ctx.textAlign = "center"; ctx.fillText("NEXT", width / 2 + radius * 2.25, cannonY + radius * 2.12);
+      ctx.fillStyle = "rgba(38,29,69,.72)"; ctx.font = `800 ${Math.max(9, radius * .47)}px sans-serif`; ctx.textAlign = "center"; ctx.fillText("NEXT · tap to swap", width / 2 + radius * 2.25, cannonY + radius * 2.12);
 
       raf = requestAnimationFrame(frame);
     };

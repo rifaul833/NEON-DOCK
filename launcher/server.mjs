@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import http from "node:http";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -259,6 +259,23 @@ async function isPortOpen(port) {
   });
 }
 
+function ensureViteBin(game) {
+  const viteBin = path.join(game.cwd, "node_modules", ".bin", "vite");
+  if (fs.existsSync(viteBin)) return viteBin;
+  const install = spawnSync("npm", ["install"], {
+    cwd: game.cwd,
+    encoding: "utf8",
+    timeout: 180000,
+  });
+  if (!fs.existsSync(viteBin)) {
+    const detail = `${install.stderr || ""}\n${install.stdout || ""}`.trim().slice(-240);
+    throw new Error(
+      `${game.title} could not install Vite. Run npm install in ${path.relative(ROOT, game.cwd)}. ${detail}`,
+    );
+  }
+  return viteBin;
+}
+
 function spawnCommand(cwd, command, args, env = {}) {
   return spawn(command, args, {
     cwd,
@@ -395,14 +412,15 @@ async function startGame(id, { exclusive = true } = {}) {
 
   let child;
   if (game.kind === "vinext") {
-    const vinextBin = path.join(game.cwd, "node_modules", ".bin", "vinext");
-    const cmd = fs.existsSync(vinextBin) ? vinextBin : "npx";
-    const args = fs.existsSync(vinextBin)
-      ? ["dev", "-p", String(game.port), "-H", "127.0.0.1"]
-      : ["vinext", "dev", "-p", String(game.port), "-H", "127.0.0.1"];
-    child = spawnCommand(game.cwd, cmd, args, {
-      WRANGLER_LOG_PATH: path.join(game.cwd, ".wrangler", "wrangler.log"),
-    });
+    const viteBin = ensureViteBin(game);
+    child = spawnCommand(
+      game.cwd,
+      viteBin,
+      ["dev", "--port", String(game.port), "--host", "127.0.0.1"],
+      {
+        WRANGLER_LOG_PATH: path.join(game.cwd, ".wrangler", "wrangler.log"),
+      },
+    );
   } else {
     const servePy = path.join(game.cwd, "serve.py");
     if (fs.existsSync(servePy)) {

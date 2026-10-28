@@ -4,7 +4,7 @@
 (function (global) {
   "use strict";
 
-  global.GAMEBOX_CONFIG = { gameType: "BallPhysicGame" };
+  global.GAMEBOX_CONFIG = { gameType: "CueSports" };
 
   const MODE_ONLINE = 3;
 

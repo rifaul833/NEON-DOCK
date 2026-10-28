@@ -1389,31 +1389,42 @@ playState.create = function(){
 
 	function replayGame(){
 
-		projectInfo.lastBreaker = "none";
+		var doReplay = function() {
+			projectInfo.lastBreaker = "none";
 
-		if(gameInfo.gameOver) {
+			if(gameInfo.gameOver) {
 
-			window.famobi_analytics.trackEvent("EVENT_LEVELRESTART", {levelName: projectInfo.levelName}).then(
+				window.famobi_analytics.trackEvent("EVENT_LEVELRESTART", {levelName: projectInfo.levelName}).then(
+						function() {
+							game.state.start('play');
+						},
+						function() {
+							game.state.start('play');
+						});
+				return;
+			}
+
+			Promise.all([
+				window.famobi_analytics.trackEvent("EVENT_LEVELFAIL", {levelName: projectInfo.levelName, reason: "quit"}),
+				window.famobi_analytics.trackEvent("EVENT_LEVELRESTART", {levelName: projectInfo.levelName})
+				]).then(
 					function() {
 						game.state.start('play');
 					},
 					function() {
 						game.state.start('play');
-					});
+					}
+			);
+		};
+
+		if (window.GameBoxIntegration && window.GameBox && window.GameBox.isOnlineSession()) {
+			window.GameBoxIntegration.checkCreditBeforePlay().then(function(ok) {
+				if (ok) doReplay();
+			});
 			return;
 		}
 
-		Promise.all([
-			window.famobi_analytics.trackEvent("EVENT_LEVELFAIL", {levelName: projectInfo.levelName, reason: "quit"}),
-			window.famobi_analytics.trackEvent("EVENT_LEVELRESTART", {levelName: projectInfo.levelName})
-			]).then(
-				function() {
-					game.state.start('play');
-				},
-				function() {
-					game.state.start('play');
-				}
-		);
+		doReplay();
 	}
 
 

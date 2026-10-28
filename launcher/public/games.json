@@ -41,16 +41,6 @@
       "playUrl": "/games/darts/"
     },
     {
-      "id": "pool",
-      "title": "Happy Break!",
-      "subtitle": "Cheerful pool — aim, shoot, clear the table",
-      "category": "Arcade",
-      "controls": "Mouse / Touch",
-      "accent": "#3ecf8e",
-      "cover": "/covers/pool.png",
-      "playUrl": "/games/pool/"
-    },
-    {
       "id": "snakes",
       "title": "Snake & Ladder",
       "subtitle": "Race to the top — climb ladders or slide down",

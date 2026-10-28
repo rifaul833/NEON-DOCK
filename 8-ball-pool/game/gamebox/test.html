@@ -3,60 +3,76 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GameBox Integration Test</title>
+  <title>GameBox Integration Test (v1.3)</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; }
     textarea, input { width: 100%; box-sizing: border-box; }
     textarea { min-height: 120px; font-family: ui-monospace, monospace; }
-    button { margin-top: 8px; padding: 10px 14px; }
+    button { margin-top: 8px; padding: 10px 14px; margin-right: 8px; }
     pre { background: #111; color: #d8ffe8; padding: 12px; overflow: auto; }
     .ok { color: #0a7; }
     .err { color: #c33; }
   </style>
   <script src="vendor/pako.min.js"></script>
   <script src="crypto.js"></script>
+  <script src="gamebox-sdk.js"></script>
 </head>
 <body>
-  <h1>GameBox Launch Token Test</h1>
+  <h1>GameBox Launch Token Test (v1.3)</h1>
   <p>Paste a staging <code>encryptedString</code> from GameBox to verify decryption.</p>
   <label>encryptedString</label>
   <textarea id="token" placeholder="eyJ2IjoxLCJjdCI6..."></textarea>
   <label>Decryption key</label>
   <input id="key" value="J9k8L7m6N5p4Q3r2" />
   <button id="decrypt">Decrypt</button>
-  <button id="roundtrip">Round-trip test</button>
+  <button id="roundtrip">Round-trip test (v1.3)</button>
   <pre id="out">Ready.</pre>
   <script>
     const out = document.getElementById('out');
-  document.getElementById('decrypt').onclick = async () => {
+    document.getElementById('decrypt').onclick = async () => {
       out.textContent = 'Decrypting...';
       try {
-        const result = await GameBoxCrypto.decryptToken(
+        const decrypted = await GameBoxCrypto.decryptToken(
           document.getElementById('token').value.trim(),
           document.getElementById('key').value.trim(),
         );
-        out.innerHTML = '<span class="ok">Success</span>\n' + JSON.stringify(result, null, 2);
+        const parsed = GameBox.parseLaunchPayload(decrypted);
+        out.innerHTML = '<span class="ok">Success</span>\n' + JSON.stringify(parsed, null, 2);
       } catch (e) {
         out.innerHTML = '<span class="err">Error: ' + e.message + '</span>';
       }
     };
     document.getElementById('roundtrip').onclick = async () => {
       const sample = {
-        success: true,
-        gameData: {
-          userId: 'test-user',
-          gameId: '181',
+        v1: true,
+        data: {
+          userId: 1878931,
+          display_name: 'User',
+          username: 'user_1878931',
+          isbot: false,
+          user_skill: 'e',
+          user_level: 123,
+          avatar_url: 'https://ui-gamebox.stacknize.com/assets/img/user.webp',
+          gameId: '270',
+          gamethumbnailurl: 'assets/all_images/BallPhysicGame/BallPhysicGame.webp',
           canPlay: true,
-          nakamaURl: 'https://nakama.stacknize.com',
-          matchmakingUrl: 'https://multiplayer.stacknize.com',
-          gameScoreAPIUrl: 'https://test-gamebox.stacknize.com/api/api/v1/tournaments/submitMultiplayerScore',
-          scoreEncryptionKey: 'scoreEncryptionKey',
+          session_id: 'play-and-win-270-1787666045680-tj345phc',
+          bearerToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sample',
+          'game-category-slug': 'ball-physic-game',
+          gameScoreAPIUrl: 'https://ui-gamebox.stacknize.com/submitMultiplayerScore',
+          checkCreditScoreAPIUrl: 'https://api-gamebox.stacknize.com/api/v1/user/checkCreditGameAccess',
+          redirectUrl: 'https://ui-gamebox.stacknize.com/',
+          nakamaUrl: 'https://nakama.stacknize.com',
+          matchMakingUrl: 'https://multiplayer.stacknize.com',
+          scoreEncryptionKey: 'S1c2O3r4E5n6C7k8',
         },
       };
       try {
-        const enc = await GameBoxCrypto.encryptToken(sample, document.getElementById('key').value.trim());
-        const dec = await GameBoxCrypto.decryptToken(enc, document.getElementById('key').value.trim());
-        out.innerHTML = '<span class="ok">Round-trip OK</span>\n' + JSON.stringify(dec, null, 2);
+        const key = document.getElementById('key').value.trim();
+        const enc = await GameBoxCrypto.encryptToken(sample, key);
+        const dec = await GameBoxCrypto.decryptToken(enc, key);
+        const parsed = GameBox.parseLaunchPayload(dec);
+        out.innerHTML = '<span class="ok">Round-trip OK (v1.3)</span>\n' + JSON.stringify(parsed.gameData, null, 2);
       } catch (e) {
         out.innerHTML = '<span class="err">Round-trip failed: ' + e.message + '</span>';
       }

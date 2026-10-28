@@ -34,8 +34,12 @@ h1 span { color:#ffec55; }
 .roll-zone { margin-top:18px; display:flex; align-items:center; gap:22px; }
 .dice-wrap { width:80px; height:80px; perspective:500px; filter:drop-shadow(0 12px 7px #26728d4a); }
 .dice { width:64px; height:64px; position:relative; transform-style:preserve-3d; transform:rotateX(-18deg) rotateY(30deg); margin:5px; }
+.dice.dice-flat { transform:none; transform-style:flat; }
+.dice.dice-flat .dice-face { position:relative; transform:none; }
 .rolling .dice { animation:diceRoll .55s cubic-bezier(.2,.8,.2,1) infinite; }
+.rolling .dice.dice-flat { animation:diceSpin .16s linear infinite; }
 @keyframes diceRoll { to { transform:rotateX(342deg) rotateY(390deg) rotateZ(180deg); } }
+@keyframes diceSpin { 25%{transform:rotate(16deg) scale(.96)} 75%{transform:rotate(-18deg) scale(1.04)} }
 .dice-face { position:absolute; width:64px; height:64px; border:3px solid #d9b46a; border-radius:14px; background:linear-gradient(145deg,#fffdf2,#ffe8b5); box-shadow:inset -6px -7px 8px #dcae5144; display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); padding:8px; backface-visibility:hidden; }
 .face-front { transform:translateZ(32px); }.face-back { transform:rotateY(180deg) translateZ(32px); }.face-right { transform:rotateY(90deg) translateZ(32px); }.face-left { transform:rotateY(-90deg) translateZ(32px); }.face-top { transform:rotateX(90deg) translateZ(32px); }.face-bottom { transform:rotateX(-90deg) translateZ(32px); }
 .dot { width:9px; height:9px; border-radius:50%; background:#ed4d57; box-shadow:inset -2px -2px #a52834; place-self:center; }

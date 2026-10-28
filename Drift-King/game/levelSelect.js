@@ -215,6 +215,7 @@ function startLevel(levelNum) {
     levelCoinsCollected = 0;
     levelHadCrash = false;
 
+    var beginLevel = function() {
     var doStart = function() {
         if (carMesh) carMesh.getChildMeshes().forEach(function(m) { m.isVisible = true; });
         if (lobbyPedestalMesh) lobbyPedestalMesh.isVisible = false;
@@ -244,6 +245,16 @@ function startLevel(levelNum) {
     } else {
         doStart();
     }
+    };
+
+    if (window.GameBoxIntegration && window.GameBox && window.GameBox.isOnlineSession()) {
+        window.GameBoxIntegration.checkCreditBeforePlay().then(function(ok) {
+            if (ok) beginLevel();
+        });
+        return;
+    }
+
+    beginLevel();
 }
 
 // Back button + All Complete event listeners

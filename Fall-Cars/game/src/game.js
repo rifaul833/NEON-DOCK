@@ -1931,8 +1931,12 @@ function wireButtons(){
 
   document.getElementById('btn-play').addEventListener('click',()=>{resumeAC();playClick();if(!saveData.playerName)showOverlay('name-screen');else{renderModeSelect();showOverlay('mode-screen');}});
   document.getElementById('btn-name-continue').addEventListener('click',()=>{const n=document.getElementById('name-input').value.trim();if(n.length<1){document.getElementById('name-input').style.borderColor='#ff4444';return;}saveData.playerName=n.substring(0,12);writeSave();playClick();renderModeSelect();showOverlay('mode-screen');});
-  document.getElementById('btn-start-mode').addEventListener('click',()=>{
+  document.getElementById('btn-start-mode').addEventListener('click',async ()=>{
     playClick();
+    if (window.GameBoxIntegration && window.GameBox?.isOnlineSession()) {
+      const ok = await window.GameBoxIntegration.checkCreditBeforePlay();
+      if (!ok) return;
+    }
     renderLoadingScreen();runMatchmaking(true);
   });
   document.getElementById('btn-mode-back').addEventListener('click',()=>{playClick();showOverlay('splash');});

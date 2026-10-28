@@ -1,5 +1,5 @@
 /**
- * Shared GameBox integration helpers for NEON DOCK games.
+ * Shared GameBox integration helpers for NEON DOCK games (v1.3).
  */
 (function (global) {
   "use strict";
@@ -31,8 +31,65 @@
     if (matchmakingUi) matchmakingUi.style.display = "none";
   }
 
+  function mountUserProfile() {
+    if (!global.GameBox?.isOnlineSession()) return;
+    const data = global.GameBox.getLaunchData();
+    if (!data || document.getElementById("gamebox-user-profile")) return;
+
+    const el = document.createElement("div");
+    el.id = "gamebox-user-profile";
+    el.style.cssText =
+      "position:fixed;top:12px;left:12px;z-index:99998;display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,0,0,.65);border-radius:999px;color:#fff;font:600 12px/1.2 sans-serif;pointer-events:none;max-width:min(240px,70vw);";
+
+    if (data.avatar_url) {
+      const img = document.createElement("img");
+      img.src = data.avatar_url;
+      img.alt = "";
+      img.style.cssText =
+        "width:28px;height:28px;border-radius:50%;object-fit:cover;background:#333;flex-shrink:0;";
+      img.onerror = function () {
+        img.remove();
+      };
+      el.appendChild(img);
+    }
+
+    const name = document.createElement("span");
+    name.textContent = data.displayName || data.userName || "Player";
+    name.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+    el.appendChild(name);
+    document.body.appendChild(el);
+  }
+
   function register(hooks) {
     gameHooks = hooks || {};
+  }
+
+  async function checkCreditBeforePlay() {
+    if (!global.GameBox?.isOnlineSession()) return true;
+
+    showOverlay("Checking Access", "Validating your credits…");
+    try {
+      const result = await global.GameBox.checkCreditAccess();
+      hideOverlay();
+
+      if (result.skipped) return true;
+      if (result.canPlay) return true;
+
+      const message = result.message || "You cannot play at this time.";
+      showOverlay("Cannot Play", message);
+      setTimeout(function () {
+        hideOverlay();
+        if (result.redirectUrl) {
+          global.location.href = result.redirectUrl;
+        }
+      }, 3000);
+      return false;
+    } catch (err) {
+      hideOverlay();
+      showOverlay("Access Check Failed", err.message || "Please try again.");
+      setTimeout(hideOverlay, 2500);
+      return false;
+    }
   }
 
   async function bootstrap() {
@@ -43,6 +100,12 @@
 
     try {
       await global.GameBox.init({ allowGuest: true, autoRedirect: true });
+      if (
+        !global.GameBox.isOnlineSession() &&
+        new URLSearchParams(global.location.search).get("encryptedString")
+      ) {
+        await global.GameBox.waitForPlatformAuth(2500);
+      }
     } catch (err) {
       console.error("[GameBox] init error", err);
       return false;
@@ -57,6 +120,7 @@
 
     if (global.GameBox.isOnlineSession()) {
       console.log("[GameBox] Online session ready", global.GameBox.getLaunchData());
+      mountUserProfile();
       if (typeof gameHooks?.mountOnlineButton === "function") {
         gameHooks.mountOnlineButton(startOnlineMatch);
       } else {
@@ -89,6 +153,11 @@
       throw new Error("No GameBox launch session");
     }
 
+    const allowed = await checkCreditBeforePlay();
+    if (!allowed) {
+      throw new Error("Credit access denied");
+    }
+
     showOverlay("Finding Opponent", "Connecting to Nakama matchmaking…");
     try {
       await global.GameBox.authenticate();
@@ -97,7 +166,10 @@
       try {
         await global.GameBox.connectMatchServer();
       } catch (err) {
-        console.warn("[GameBox] Dedicated server unavailable, continuing locally:", err.message);
+        console.warn(
+          "[GameBox] Dedicated server unavailable, continuing locally:",
+          err.message,
+        );
       }
 
       global.__gameboxSession = global.__gameboxSession || {};
@@ -120,7 +192,10 @@
 
   async function submitGameResult({ isWinner, score, stats, reason }) {
     if (!global.GameBox?.isOnlineSession()) return null;
-    if (!global.__gameboxSession?.matchActive && !global.GameBox.isOnlineMatchActive()) {
+    if (
+      !global.__gameboxSession?.matchActive &&
+      !global.GameBox.isOnlineMatchActive()
+    ) {
       return null;
     }
 
@@ -143,6 +218,7 @@
   global.GameBoxIntegration = {
     register,
     bootstrap,
+    checkCreditBeforePlay,
     startOnlineMatch,
     submitGameResult,
     showOverlay,

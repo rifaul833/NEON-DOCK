@@ -75,7 +75,7 @@
       transform: translateX(-50%) translateY(0);
     }
   </style>
-  <script src="famobi-api.js"></script>
+  <script src="famobi-api.js?v=6"></script>
   <script src="scenery.js?v=5"></script>
   <script>
     window.famobi_gameID = "speed-master";
@@ -93,7 +93,7 @@
       function g_cff() { g_ff(); g_ra(g_cff); }
       function g_p(a, f) { g_c[f](Array.prototype.join.call(a, " ")); }
       function g_scr() {
-        g_s.src = typeof WebAssembly === "object" ? "app.js" : "app_asm.js";
+        g_s.src = typeof WebAssembly === "object" ? "app.js?v=6" : "app_asm.js";
         g_d.body.appendChild(g_s);
       }
 

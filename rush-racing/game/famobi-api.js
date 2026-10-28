@@ -66,12 +66,12 @@
     rewardedAd: function (cb) {
       if (typeof cb === "function") {
         try {
-          cb();
+          cb({ rewardGranted: true });
         } catch (e) {
           /* ignore */
         }
       }
-      return noopPromise(false);
+      return noopPromise({ rewardGranted: true });
     },
     showInterstitialAd: function (cb) {
       if (typeof cb === "function") {
@@ -84,13 +84,10 @@
       return noopPromise();
     },
     openBrandingLink: noop,
+    _requests: {},
     onRequest: function (event, cb) {
-      if (typeof cb === "function") {
-        try {
-          cb();
-        } catch (e) {
-          /* ignore */
-        }
+      if (typeof event === "string" && typeof cb === "function") {
+        this._requests[event] = cb;
       }
     },
     setPreloadProgress: noop,
@@ -101,8 +98,48 @@
     },
   };
 
+  function tapCanvas(nx, ny) {
+    var canvas = global.document && global.document.getElementById("cnv");
+    if (!canvas) return;
+    var rect = canvas.getBoundingClientRect();
+    var x = rect.left + rect.width * nx;
+    var y = rect.top + rect.height * ny;
+    ["mousedown", "mouseup"].forEach(function (type) {
+      canvas.dispatchEvent(
+        new MouseEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX: x,
+          clientY: y,
+          button: 0,
+          view: global,
+        }),
+      );
+    });
+  }
+
+  global.RushDismissOffer = function () {
+    tapCanvas(0.64, 0.19);
+    tapCanvas(0.67, 0.22);
+    tapCanvas(0.5, 0.73);
+    try {
+      if (global.famobi._requests.resumeGameplay) global.famobi._requests.resumeGameplay();
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      if (typeof global.famobi_onResumeRequested === "function") global.famobi_onResumeRequested();
+    } catch (e) {
+      /* ignore */
+    }
+  };
+
   global.famobi_analytics = {
-    trackEvent: function () {
+    trackEvent: function (name) {
+      if (name === "EVENT_PAUSE") {
+        global.setTimeout(global.RushDismissOffer, 40);
+        global.setTimeout(global.RushDismissOffer, 180);
+      }
       return noopPromise();
     },
     trackScreen: function () {

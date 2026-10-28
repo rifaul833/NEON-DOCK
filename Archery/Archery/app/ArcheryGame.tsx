@@ -829,9 +829,9 @@ export default function ArcheryGame() {
       ]);
       competitionArrow.position.z = -0.9 + drawBlend * 0.58;
       competitionArrow.visible = performance.now() > shotVisualRef.current;
-      camera.position.x += (aimRef.current.x * 0.42 - camera.position.x) * 0.045;
-      camera.position.y += (2.15 + aimRef.current.y * 0.28 - camera.position.y) * 0.045;
-      camera.lookAt(aimRef.current.x * 0.75, 2.3 + aimRef.current.y * 0.5, -12);
+      camera.position.x += (aimRef.current.x * 0.85 - camera.position.x) * 0.18;
+      camera.position.y += (2.15 + aimRef.current.y * 0.55 - camera.position.y) * 0.18;
+      camera.lookAt(aimRef.current.x * 1.15, 2.3 + aimRef.current.y * 0.8, -12);
       renderer.render(scene, camera);
     };
     animate();

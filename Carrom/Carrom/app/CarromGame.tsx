@@ -29,6 +29,14 @@ const POCKETS = [
   [76, 724],
   [724, 724],
 ] as const;
+const POCKET_RADIUS = 44;
+const TOKEN_POINTS: Record<Disc["kind"], number> = {
+  navy: 10,
+  cream: 20,
+  queen: 50,
+  striker: 0,
+};
+const SHOT_SECONDS = 30;
 
 function makeDiscs(): Disc[] {
   const discs: Disc[] = [];
@@ -76,6 +84,8 @@ export function CarromGame() {
   const musicTimerRef = useRef<number | null>(null);
   const musicStepRef = useRef(0);
   const pocketedThisShot = useRef(0);
+  const expireTurnRef = useRef(false);
+  const [shotLeft, setShotLeft] = useState(SHOT_SECONDS);
   const [playerScore, setPlayerScore] = useState(0);
   const [aiScore, setAiScore] = useState(0);
   const [turn, setTurn] = useState<"you" | "milo">("you");
@@ -177,6 +187,8 @@ export function CarromGame() {
     pointerRef.current = null;
     interactionRef.current = null;
     pocketedThisShot.current = 0;
+    expireTurnRef.current = false;
+    setShotLeft(SHOT_SECONDS);
     setPlayerScore(0);
     setAiScore(0);
     setTurn("you");
@@ -219,20 +231,26 @@ export function CarromGame() {
       ctx.fillRect(28, 28, 744, 744);
       ctx.fillStyle = "#5b2630";
       ctx.fillRect(43, 43, 714, 714);
-      ctx.fillStyle = "#f8d88e";
+      ctx.fillStyle = "#e4b66a";
       ctx.fillRect(58, 58, 684, 684);
-      ctx.strokeStyle = "rgba(117,50,42,.2)";
-      ctx.lineWidth = 3;
-      for (let i = 0; i < 9; i += 1) {
+      const ply = ctx.createLinearGradient(58, 58, 742, 742);
+      ply.addColorStop(0, "rgba(255,236,196,.55)");
+      ply.addColorStop(0.45, "rgba(186,112,48,.18)");
+      ply.addColorStop(1, "rgba(122,62,28,.28)");
+      ctx.fillStyle = ply;
+      ctx.fillRect(58, 58, 684, 684);
+      ctx.strokeStyle = "rgba(92,42,24,.28)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 18; i += 1) {
         ctx.beginPath();
-        ctx.moveTo(80, 125 + i * 68);
-        ctx.bezierCurveTo(290, 100 + i * 70, 515, 150 + i * 63, 720, 120 + i * 70);
+        ctx.moveTo(70, 70 + i * 38);
+        ctx.bezierCurveTo(280, 50 + i * 40, 520, 95 + i * 36, 730, 68 + i * 39);
         ctx.stroke();
       }
 
       POCKETS.forEach(([x, y]) => {
         ctx.beginPath();
-        ctx.arc(x, y, 35, 0, Math.PI * 2);
+        ctx.arc(x, y, 40, 0, Math.PI * 2);
         ctx.fillStyle = "#351d2c";
         ctx.fill();
         ctx.beginPath();
@@ -372,7 +390,7 @@ export function CarromGame() {
       if (disc.kind === "striker") {
         setMessage("Oops — striker foul! Milo gets the next shot.");
       } else {
-        const points = disc.kind === "queen" ? 3 : 1;
+        const points = TOKEN_POINTS[disc.kind] || 0;
         pocketedThisShot.current += points;
         if (turn === "you") setPlayerScore((v) => v + points);
         else setAiScore((v) => v + points);
@@ -393,16 +411,28 @@ export function CarromGame() {
           disc.vy = 0;
         } else moving = true;
 
-        if (POCKETS.some(([x, y]) => Math.hypot(disc.x - x, disc.y - y) < 31)) {
+        const nearestPocket = POCKETS.reduce(
+          (best, [x, y]) => {
+            const d = Math.hypot(disc.x - x, disc.y - y);
+            return d < best.d ? { d, x, y } : best;
+          },
+          { d: Infinity, x: 0, y: 0 },
+        );
+        if (nearestPocket.d < POCKET_RADIUS + 10) {
+          disc.vx += ((nearestPocket.x - disc.x) / Math.max(8, nearestPocket.d)) * 0.55;
+          disc.vy += ((nearestPocket.y - disc.y) / Math.max(8, nearestPocket.d)) * 0.55;
+        }
+        if (nearestPocket.d < POCKET_RADIUS) {
           pocket(disc);
           continue;
         }
-        if (disc.x - disc.r < WALL_MIN || disc.x + disc.r > WALL_MAX) {
+        const inPocketMouth = nearestPocket.d < POCKET_RADIUS + disc.r + 8;
+        if (!inPocketMouth && (disc.x - disc.r < WALL_MIN || disc.x + disc.r > WALL_MAX)) {
           disc.x = Math.max(WALL_MIN + disc.r, Math.min(WALL_MAX - disc.r, disc.x));
           disc.vx *= -0.86;
           ping(165);
         }
-        if (disc.y - disc.r < WALL_MIN || disc.y + disc.r > WALL_MAX) {
+        if (!inPocketMouth && (disc.y - disc.r < WALL_MIN || disc.y + disc.r > WALL_MAX)) {
           disc.y = Math.max(WALL_MIN + disc.r, Math.min(WALL_MAX - disc.r, disc.y));
           disc.vy *= -0.86;
           ping(165);
@@ -427,11 +457,12 @@ export function CarromGame() {
           b.x += nx * overlap * 0.5;
           b.y += ny * overlap * 0.5;
           const relative = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-          if (relative < 0) {
-            a.vx += relative * nx;
-            a.vy += relative * ny;
-            b.vx -= relative * nx;
-            b.vy -= relative * ny;
+          if (relative <= 0) {
+            const bounce = Math.min(-0.35, relative) * 1.08;
+            a.vx += bounce * nx;
+            a.vy += bounce * ny;
+            b.vx -= bounce * nx;
+            b.vy -= bounce * ny;
             ping(240 + Math.min(180, Math.abs(relative) * 15));
           }
         }
@@ -446,6 +477,20 @@ export function CarromGame() {
       striker.y = side === "you" ? 648 : 152;
       striker.vx = 0;
       striker.vy = 0;
+      discsRef.current.forEach((disc) => {
+        if (!disc.active || disc.kind === "striker") return;
+        const dx = striker.x - disc.x;
+        const dy = striker.y - disc.y;
+        const distance = Math.hypot(dx, dy) || 0.1;
+        const minDistance = striker.r + disc.r + 1;
+        if (distance >= minDistance) return;
+        const nx = dx / distance;
+        const ny = dy / distance;
+        striker.x = disc.x + nx * minDistance;
+        striker.y = disc.y + ny * minDistance;
+        striker.x = Math.max(202, Math.min(598, striker.x));
+        striker.y = side === "you" ? 648 : 152;
+      });
     };
 
     const aiShoot = () => {
@@ -486,6 +531,12 @@ export function CarromGame() {
     };
 
     const frame = () => {
+      if (expireTurnRef.current && phaseRef.current === "player") {
+        expireTurnRef.current = false;
+        pocketedThisShot.current = 0;
+        setMessage("Time’s up — Milo takes the shot.");
+        finishTurn();
+      }
       const moving = update();
       drawBoard();
       drawPlacementGuide();
@@ -503,6 +554,26 @@ export function CarromGame() {
     frame();
     return () => cancelAnimationFrame(raf);
   }, [ping, turn]);
+
+  useEffect(() => {
+    if (turn !== "you") {
+      setShotLeft(SHOT_SECONDS);
+      return;
+    }
+    setShotLeft(SHOT_SECONDS);
+    expireTurnRef.current = false;
+    const id = window.setInterval(() => {
+      if (phaseRef.current !== "player") return;
+      setShotLeft((seconds) => {
+        if (seconds <= 1) {
+          expireTurnRef.current = true;
+          return 0;
+        }
+        return seconds - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [turn]);
 
   const pointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -617,7 +688,9 @@ export function CarromGame() {
           <p className="eyebrow">PLAYER 1</p>
           <h2>You</h2>
           <div className="score-bubble"><strong>{playerScore}</strong><span>points</span></div>
-          <span className={`turn-pill ${turn === "you" ? "active" : ""}`}>Your turn</span>
+          <span className={`turn-pill ${turn === "you" ? "active" : ""}`}>
+            {turn === "you" ? `${shotLeft}s to shoot` : "Your turn"}
+          </span>
         </aside>
 
         <div className="board-column">
@@ -652,7 +725,7 @@ export function CarromGame() {
       </section>
 
       <footer>
-        <span>Queen = 3 points</span><b>•</b><span>Every other coin = 1 point</span><b>•</b><span>Most points wins!</span>
+        <span>Queen = 50</span><b>•</b><span>White = 20</span><b>•</b><span>Black = 10</span><b>•</b><span>30s shot clock</span>
       </footer>
     </main>
   );

@@ -616,19 +616,30 @@ var menuState = {
 
 		function initGame(){
 
-			window.famobi_analytics.trackEvent("EVENT_LEVELSTART", {levelName: projectInfo.levelName}).then(function() {
+			var startPlay = function() {
+				window.famobi_analytics.trackEvent("EVENT_LEVELSTART", {levelName: projectInfo.levelName}).then(function() {
 
-				if(projectInfo.tutorialPlayed == false){
-					//projectInfo.tutorial = true;
-				}
+					if(projectInfo.tutorialPlayed == false){
+						//projectInfo.tutorial = true;
+					}
 
-				//temp set rating to between 1 and 5 in settings menu
-				//projectInfo.aiRating = 1;
+					//temp set rating to between 1 and 5 in settings menu
+					//projectInfo.aiRating = 1;
 
-				projectInfo.lastBreaker = "none";
-				game.state.start('play');
+					projectInfo.lastBreaker = "none";
+					game.state.start('play');
 
-			}.bind(this));
+				}.bind(this));
+			};
+
+			if (window.GameBoxIntegration && window.GameBox && window.GameBox.isOnlineSession()) {
+				window.GameBoxIntegration.checkCreditBeforePlay().then(function(ok) {
+					if (ok) startPlay();
+				});
+				return;
+			}
+
+			startPlay();
 
 		}
 

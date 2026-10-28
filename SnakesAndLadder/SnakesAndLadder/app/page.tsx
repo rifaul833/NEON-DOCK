@@ -17,7 +17,7 @@ const jumps: Record<number, number> = {
   66: 45,
   76: 58,
   89: 53,
-  99: 41,
+  99: 8,
 };
 
 const snakes = [
@@ -28,7 +28,7 @@ const snakes = [
   { from: 66, to: 45, color: "purple" },
   { from: 76, to: 58, color: "orange" },
   { from: 89, to: 53, color: "pink" },
-  { from: 99, to: 41, color: "purple" },
+  { from: 99, to: 8, color: "purple" },
 ];
 
 const ladders = [
@@ -85,31 +85,41 @@ function Dice({ value, rolling }: { value: number; rolling: boolean }) {
       {Array.from({ length: 9 }, (_, i) => <span key={i} className={dots[number].includes(i) ? "dot" : ""} />)}
     </div>
   );
-  const right = value % 6 + 1;
-  const top = (value + 2) % 6 + 1;
   return (
     <div className={`dice-wrap ${rolling ? "rolling" : ""}`} aria-label={`Dice shows ${value}`}>
-      <div className="dice">
+      <div className="dice dice-flat">
         {face(value, "face-front")}
-        {face(7 - value, "face-back")}
-        {face(right, "face-right")}
-        {face(7 - right, "face-left")}
-        {face(top, "face-top")}
-        {face(7 - top, "face-bottom")}
       </div>
     </div>
   );
+}
+
+function playHopSound() {
+  const AudioEngine = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  const audio = new AudioEngine();
+  const now = audio.currentTime;
+  const knock = audio.createOscillator();
+  const gain = audio.createGain();
+  knock.type = "triangle";
+  knock.frequency.setValueAtTime(520, now);
+  knock.frequency.exponentialRampToValueAtTime(180, now + 0.09);
+  gain.gain.setValueAtTime(0.08, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+  knock.connect(gain).connect(audio.destination);
+  knock.start(now);
+  knock.stop(now + 0.11);
+  window.setTimeout(() => void audio.close(), 180);
 }
 
 function playDiceSound() {
   const AudioEngine = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const audio = new AudioEngine();
   const now = audio.currentTime;
-  const noiseBuffer = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.58), audio.sampleRate);
+  const noiseBuffer = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.7), audio.sampleRate);
   const samples = noiseBuffer.getChannelData(0);
   for (let i = 0; i < samples.length; i += 1) {
     const fade = 1 - i / samples.length;
-    samples[i] = (Math.random() * 2 - 1) * fade * (0.5 + Math.sin(i * 0.09) * 0.5);
+    samples[i] = (Math.random() * 2 - 1) * fade * (0.7 + Math.sin(i * 0.07) * 0.4);
   }
   const tumble = audio.createBufferSource();
   const filter = audio.createBiquadFilter();
@@ -119,8 +129,8 @@ function playDiceSound() {
   filter.frequency.setValueAtTime(780, now);
   filter.frequency.exponentialRampToValueAtTime(260, now + 0.58);
   filter.Q.value = 1.2;
-  tumbleGain.gain.setValueAtTime(0.11, now);
-  tumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+  tumbleGain.gain.setValueAtTime(0.18, now);
+  tumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
   tumble.connect(filter).connect(tumbleGain).connect(audio.destination);
   tumble.start(now);
 
@@ -163,7 +173,7 @@ export default function Home() {
     if (!musicOn) return;
     const AudioEngine = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const audio = new AudioEngine();
-    const melody = [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880, 698.46, 659.25, 783.99, 987.77, 783.99, 587.33, 659.25, 783.99, 523.25];
+    const melody = [392, 493.88, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 659.25, 783.99, 987.77, 880, 783.99, 659.25, 587.33, 493.88];
     let step = 0;
     const playNote = () => {
       if (audio.state === "suspended") void audio.resume();
@@ -213,32 +223,34 @@ export default function Home() {
       setDice(value);
       setRolling(false);
       setMoving(true);
-      setPositions(current => {
-        const next = [...current];
-        const attempted = next[turn] + value;
-        if (attempted > 100) {
-          setMessage(`Too far! Player ${turn + 1} stays put.`);
-          window.setTimeout(() => {
-            setTurn(t => 1 - t);
-            setMessage(`Player ${2 - turn}, your turn!`);
-            setMoving(false);
-          }, 750);
-          return next;
-        }
-        const landed = jumps[attempted] ?? attempted;
-        next[turn] = attempted;
-        if (attempted === 100) {
+      const start = positions[turn];
+      const attempted = start + value;
+      if (attempted > 100) {
+        setMessage(`Too far! Player ${turn + 1} stays put.`);
+        window.setTimeout(() => {
+          setTurn(t => 1 - t);
+          setMessage(`Player ${2 - turn}, your turn!`);
+          setMoving(false);
+        }, 750);
+        return;
+      }
+      let step = 0;
+      const finishMove = (square: number) => {
+        const landed = jumps[square] ?? square;
+        if (square === 100) {
           setWinner(turn);
           setMoving(false);
           setMessage(`Player ${turn + 1} wins the crown!`);
-        } else if (landed !== attempted) {
-          const isLadder = landed > attempted;
+          return;
+        }
+        if (landed !== square) {
+          const isLadder = landed > square;
           setPawnMotion({ player: turn, type: isLadder ? "climbing" : "bitten" });
           setBoardEvent({
             type: isLadder ? "ladder" : "snake",
             text: isLadder ? `Player ${turn + 1} found a ladder!` : `Snake bite! Player ${turn + 1} slides down!`,
           });
-          setMessage(isLadder ? `🪜 Ladder! Climbing from ${attempted} to ${landed}…` : `🐍 Snake bite at ${attempted}! Sliding to ${landed}…`);
+          setMessage(isLadder ? `🪜 Ladder! Climbing from ${square} to ${landed}…` : `🐍 Snake bite at ${square}! Sliding to ${landed}…`);
           window.setTimeout(() => {
             setPositions(latest => {
               const moved = [...latest];
@@ -253,18 +265,29 @@ export default function Home() {
             setMessage(`Player ${2 - turn}, your turn!`);
             setMoving(false);
           }, 1900);
-        } else {
-          setMessage(`Player ${turn + 1} moved ${value} spaces.`);
-          window.setTimeout(() => {
-            setTurn(t => 1 - t);
-            setMessage(`Player ${2 - turn}, your turn!`);
-            setMoving(false);
-          }, 850);
+          return;
         }
-        return next;
-      });
+        setMessage(`Player ${turn + 1} moved ${value} spaces.`);
+        window.setTimeout(() => {
+          setTurn(t => 1 - t);
+          setMessage(`Player ${2 - turn}, your turn!`);
+          setMoving(false);
+        }, 400);
+      };
+      const advance = () => {
+        step += 1;
+        playHopSound();
+        setPositions(latest => {
+          const moved = [...latest];
+          moved[turn] = start + step;
+          return moved;
+        });
+        if (step < value) window.setTimeout(advance, 240);
+        else finishMove(start + value);
+      };
+      window.setTimeout(advance, 80);
     }, 90);
-  }, [moving, rolling, turn, winner]);
+  }, [moving, positions, rolling, turn, winner]);
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
