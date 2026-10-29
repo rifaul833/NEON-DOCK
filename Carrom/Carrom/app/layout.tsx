@@ -20,8 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = `${protocol}://${host}`;
 
   return {
-    title: "Carrom Pop! — Cartoon Carrom Game",
-    description: "A playful 3D-style carrom game. Pull back, aim, and pocket the queen before Milo does.",
+    title: "Carrom — Classic Board Game",
+    description: "A traditional wooden carrom board. Position the striker, aim, and pocket the queen.",
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
     openGraph: {
       title: "Carrom Pop!",

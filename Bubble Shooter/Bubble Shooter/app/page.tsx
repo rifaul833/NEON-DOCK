@@ -305,19 +305,39 @@ export default function Home() {
       ctx.lineWidth = Math.max(5, radius * .28);
       ctx.setLineDash([radius * .5, radius * .22]);
       ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.shadowColor = "rgba(255,236,120,.75)";
       ctx.shadowBlur = 10;
       ctx.beginPath();
+      const wallL = radius, wallR = width - radius, step = radius * .22;
       let px = width / 2, py = cannonY, vx = aimRef.current.x, vy = aimRef.current.y;
+      const bouncePts: { x: number; y: number }[] = [];
       ctx.moveTo(px, py);
-      for (let i = 0; i < 110; i++) {
-        px += vx * radius * .17; py += vy * radius * .17;
-        if (px < radius) { px = radius; vx = Math.abs(vx); ctx.lineTo(px, py); }
-        if (px > width - radius) { px = width - radius; vx = -Math.abs(vx); ctx.lineTo(px, py); }
+      for (let i = 0; i < 260; i++) {
+        px += vx * step;
+        py += vy * step;
+        if (px <= wallL) { px = wallL; vx = Math.abs(vx); bouncePts.push({ x: px, y: py }); }
+        else if (px >= wallR) { px = wallR; vx = -Math.abs(vx); bouncePts.push({ x: px, y: py }); }
         ctx.lineTo(px, py);
-        if (py < top || i > 58) break;
+        const hitsCluster = boardRef.current.some(b => {
+          const p = pos(b.row, b.col);
+          return Math.hypot(p.x - px, p.y - py) < radius * 1.82;
+        });
+        if (hitsCluster || py < top) break;
       }
-      ctx.stroke(); ctx.restore();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.shadowBlur = 0;
+      for (const bounce of bouncePts) {
+        ctx.fillStyle = "#fff6b0";
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(bounce.x, bounce.y, Math.max(5, radius * .3), 0, TAU);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
 
       for (const b of boardRef.current) { const p = pos(b.row, b.col); drawBubble(p.x, p.y, b.color); }
       const flying = flyingRef.current;
