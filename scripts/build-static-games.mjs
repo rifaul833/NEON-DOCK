@@ -105,6 +105,20 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   fs.writeFileSync(file, patched);
 }
 
+function ensureDeps(gameDir, gameId) {
+  if (fs.existsSync(path.join(gameDir, "node_modules", "next"))) return false;
+  console.log(`Installing deps for ${gameId}…`);
+  let install = spawnSync("npm", ["ci"], { cwd: gameDir, stdio: "inherit", env: process.env });
+  // Fall back to a normal install if the lockfile is out of sync.
+  if (install.status !== 0) {
+    install = spawnSync("npm", ["install"], { cwd: gameDir, stdio: "inherit", env: process.env });
+  }
+  if (install.status !== 0) {
+    throw new Error(`npm install failed for ${gameId}`);
+  }
+  return true;
+}
+
 function buildGame(game) {
   const gameDir = path.join(ROOT, game.dir);
   const basePath = `/games/${game.id}`;
@@ -114,25 +128,16 @@ function buildGame(game) {
     console.error(`SKIP ${game.id}: missing package.json`);
     return false;
   }
-  if (!fs.existsSync(path.join(gameDir, "node_modules", "next"))) {
-    console.log(`Installing deps for ${game.id}…`);
-    const install = spawnSync("npm", ["ci", "--omit=dev"], {
-      cwd: gameDir,
-      stdio: "inherit",
-      env: process.env,
-    });
-    // Prefer full install if ci fails / lock issues
-    if (install.status !== 0) {
-      spawnSync("npm", ["install"], { cwd: gameDir, stdio: "inherit", env: process.env });
-    }
-  }
 
-  console.log(`\n=== Building ${game.id} (${basePath}) ===`);
-  writeNextConfig(gameDir, basePath);
-  writeDbStub(gameDir);
-  patchLayout(gameDir, game.title, game.description);
-
+  let installedDeps = false;
   try {
+    installedDeps = ensureDeps(gameDir, game.id);
+
+    console.log(`\n=== Building ${game.id} (${basePath}) ===`);
+    writeNextConfig(gameDir, basePath);
+    writeDbStub(gameDir);
+    patchLayout(gameDir, game.title, game.description);
+
     rmrf(path.join(gameDir, "out"));
     rmrf(path.join(gameDir, ".next"));
     const result = spawnSync("npx", ["next", "build"], {
@@ -158,10 +163,15 @@ function buildGame(game) {
     fs.cpSync(built, outDir, { recursive: true });
     console.log(`OK ${game.id} → ${outDir}`);
     return true;
+  } catch (error) {
+    console.error(`FAIL ${game.id}: ${error instanceof Error ? error.message : error}`);
+    return false;
   } finally {
     restore(path.join(gameDir, "next.config.ts"));
     restore(path.join(gameDir, "db", "index.ts"));
     restore(path.join(gameDir, "app", "layout.tsx"));
+    // On CI keep disk usage bounded by removing deps we installed ourselves.
+    if (installedDeps) rmrf(path.join(gameDir, "node_modules"));
   }
 }
 
