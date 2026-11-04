@@ -28,8 +28,15 @@ const snakes = [
   { from: 66, to: 45, color: "purple" },
   { from: 76, to: 58, color: "orange" },
   { from: 89, to: 53, color: "pink" },
-  { from: 99, to: 8, color: "purple" },
+  { from: 99, to: 8, color: "green" },
 ];
+
+const SNAKE_SKIN: Record<string, { dorsal: string; mid: string; belly: string; blotch: string; edge: string }> = {
+  pink: { dorsal: "#6b2a24", mid: "#a34a38", belly: "#e8c9a4", blotch: "#3d1612", edge: "#2a100c" },
+  purple: { dorsal: "#3d4a28", mid: "#6a7a40", belly: "#d7d0a8", blotch: "#232a14", edge: "#16190c" },
+  orange: { dorsal: "#8a5a28", mid: "#c4893c", belly: "#ead4a4", blotch: "#5a3514", edge: "#2e1a0a" },
+  green: { dorsal: "#245c32", mid: "#3e8a48", belly: "#d4e0b0", blotch: "#14321c", edge: "#0c1c10" },
+};
 
 const ladders = [
   [4, 25], [13, 46], [33, 49], [42, 63], [50, 69], [62, 81], [74, 92],
@@ -50,7 +57,7 @@ function pointFor(position: number) {
   return { x: (col + 0.5) * 10, y: (9 - rowFromBottom + 0.5) * 10 };
 }
 
-function Connector({ from, to, type, color = "" }: { from: number; to: number; type: "snake" | "ladder"; color?: string }) {
+function Connector({ from, to }: { from: number; to: number }) {
   const a = pointFor(from);
   const b = pointFor(to);
   const dx = b.x - a.x;
@@ -59,20 +66,115 @@ function Connector({ from, to, type, color = "" }: { from: number; to: number; t
   const angle = Math.atan2(dy, dx) * (180 / Math.PI);
   return (
     <div
-      className={`${type} ${color}`}
+      className="ladder"
       style={{ left: `${a.x.toFixed(1)}%`, top: `${a.y.toFixed(1)}%`, width: `${length.toFixed(3)}%`, transform: `rotate(${angle.toFixed(3)}deg)` }}
       aria-hidden="true"
     >
-      {type === "snake" ? (
-        <>
-          <span className="snake-tail" />
-          {Array.from({ length: 11 }, (_, i) => <i className="snake-segment" key={i} style={{ left: `${i * 8.3}%` }} />)}
-          <span className="snake-head"><b className="eye left"><em /></b><b className="eye right"><em /></b><strong className="smile" /><u className="tongue" /></span>
-        </>
-      ) : (
-        <><span className="ladder-rail top" /><span className="ladder-rail bottom" />{Array.from({ length: 8 }, (_, i) => <i className="ladder-rung" key={i} style={{ left: `${8 + i * 12}%` }} />)}</>
-      )}
+      <span className="ladder-rail top" /><span className="ladder-rail bottom" />
+      {Array.from({ length: 8 }, (_, i) => <i className="ladder-rung" key={i} style={{ left: `${8 + i * 12}%` }} />)}
     </div>
+  );
+}
+
+function snakeMesh(from: number, to: number) {
+  const a = pointFor(from);
+  const b = pointFor(to);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const px = -dy / len;
+  const py = dx / len;
+  const waves = from === 99 ? 2.15 : Math.max(1.15, len / 42);
+  const amp = from === 99 ? 2.6 : Math.min(2.4, 0.9 + len * 0.028);
+  const steps = Math.max(28, Math.round(len * 2.2));
+  const center: [number, number][] = [];
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const fade = Math.sin(t * Math.PI);
+    const wave = Math.sin(t * waves * Math.PI * 2 + 0.4) * amp * fade;
+    center.push([a.x + dx * t + px * wave, a.y + dy * t + py * wave]);
+  }
+  const headW = from === 99 ? 1.55 : 1.15;
+  const tailW = 0.18;
+  const left: [number, number][] = [];
+  const right: [number, number][] = [];
+  const bellyL: [number, number][] = [];
+  const bellyR: [number, number][] = [];
+  const marks: { x: number; y: number; nx: number; ny: number; w: number; t: number }[] = [];
+  for (let i = 0; i < center.length; i += 1) {
+    const p0 = center[Math.max(0, i - 1)];
+    const p1 = center[Math.min(center.length - 1, i + 1)];
+    const tx = p1[0] - p0[0];
+    const ty = p1[1] - p0[1];
+    const tl = Math.hypot(tx, ty) || 1;
+    const nx = -ty / tl;
+    const ny = tx / tl;
+    const t = i / (center.length - 1);
+    const w = t < 0.06 ? headW * (0.82 + t * 3) : headW + (tailW - headW) * ((t - 0.06) / 0.94) ** 1.25;
+    left.push([center[i][0] + nx * w, center[i][1] + ny * w]);
+    right.push([center[i][0] - nx * w, center[i][1] - ny * w]);
+    bellyL.push([center[i][0] + nx * w * 0.18, center[i][1] + ny * w * 0.18]);
+    bellyR.push([center[i][0] - nx * w * 0.72, center[i][1] - ny * w * 0.72]);
+    if (i % 3 === 0 && t > 0.08 && t < 0.92) marks.push({ x: center[i][0], y: center[i][1], nx, ny, w, t });
+  }
+  const poly = (pts: [number, number][]) => pts.map((p, i) => `${i ? "L" : "M"} ${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(" ");
+  const body = `${poly(left)} ${[...right].reverse().map(p => `L ${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(" ")} Z`;
+  const belly = `${poly(bellyL)} ${[...bellyR].reverse().map(p => `L ${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(" ")} Z`;
+  const headAng = Math.atan2(center[1][1] - center[0][1], center[1][0] - center[0][0]) * (180 / Math.PI);
+  const last = center[center.length - 1];
+  const prev = center[center.length - 2];
+  const tailAng = Math.atan2(last[1] - prev[1], last[0] - prev[0]) * (180 / Math.PI);
+  return { body, belly, marks, head: center[0], last, headAng, tailAng, headW };
+}
+
+function SnakeGraphic({ from, to, color }: { from: number; to: number; color: string }) {
+  const skin = SNAKE_SKIN[color] || SNAKE_SKIN.green;
+  const { body, belly, marks, head, last, headAng, tailAng, headW } = snakeMesh(from, to);
+  const id = `sn${from}`;
+  const s = from === 99 ? 1.18 : 1;
+  return (
+    <g>
+      <defs>
+        <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={skin.dorsal} />
+          <stop offset="45%" stopColor={skin.mid} />
+          <stop offset="100%" stopColor={skin.dorsal} />
+        </linearGradient>
+        <radialGradient id={`${id}-h`} cx="38%" cy="40%" r="70%">
+          <stop offset="0%" stopColor={skin.mid} />
+          <stop offset="70%" stopColor={skin.dorsal} />
+          <stop offset="100%" stopColor={skin.edge} />
+        </radialGradient>
+        <filter id={`${id}-s`} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0.35" dy="0.55" stdDeviation="0.35" floodColor="#1a120c" floodOpacity="0.35" />
+        </filter>
+      </defs>
+      <path d={body} fill={`url(#${id}-g)`} stroke={skin.edge} strokeWidth={0.18} filter={`url(#${id}-s)`} />
+      <path d={belly} fill={skin.belly} opacity={0.92} />
+      {marks.map((m, i) => {
+        const hw = m.w * 0.72;
+        const hl = m.w * (i % 2 ? 1.15 : 1.45);
+        const qx = -m.ny;
+        const qy = m.nx;
+        const d = `M ${(m.x + qx * hl).toFixed(2)} ${(m.y + qy * hl).toFixed(2)} L ${(m.x + m.nx * hw).toFixed(2)} ${(m.y + m.ny * hw).toFixed(2)} L ${(m.x - qx * hl * 0.7).toFixed(2)} ${(m.y - qy * hl * 0.7).toFixed(2)} L ${(m.x - m.nx * hw * 0.35).toFixed(2)} ${(m.y - m.ny * hw * 0.35).toFixed(2)} Z`;
+        return <path key={i} d={d} fill={skin.blotch} opacity={0.72} />;
+      })}
+      <g transform={`translate(${last[0].toFixed(2)} ${last[1].toFixed(2)}) rotate(${tailAng.toFixed(2)})`}>
+        <polygon points="0,-0.22 2.1,0 0,0.22" fill={skin.dorsal} />
+      </g>
+      <g transform={`translate(${head[0].toFixed(2)} ${head[1].toFixed(2)}) rotate(${headAng.toFixed(2)}) scale(${s})`}>
+        <path d={`M ${headW * 0.2} ${-headW * 0.92} C ${-headW * 0.4} ${-headW * 1.15} ${-headW * 1.55} ${-headW * 0.55} ${-headW * 2.05} ${-headW * 0.12} C ${-headW * 2.22} 0 ${-headW * 2.22} 0 ${-headW * 2.05} ${headW * 0.12} C ${-headW * 1.55} ${headW * 0.55} ${-headW * 0.4} ${headW * 1.15} ${headW * 0.2} ${headW * 0.92} C ${headW * 0.95} ${headW * 0.38} ${headW * 0.95} ${-headW * 0.38} ${headW * 0.2} ${-headW * 0.92} Z`} fill={`url(#${id}-h)`} stroke={skin.edge} strokeWidth={0.16} />
+        <path d={`M ${-headW * 0.15} 0 L ${-headW * 1.85} ${-headW * 0.08} L ${-headW * 1.85} ${headW * 0.08} Z`} fill={skin.belly} opacity={0.7} />
+        <ellipse cx={-headW * 0.55} cy={-headW * 0.42} rx={headW * 0.22} ry={headW * 0.16} fill="#1c1610" />
+        <ellipse cx={-headW * 0.55} cy={headW * 0.42} rx={headW * 0.22} ry={headW * 0.16} fill="#1c1610" />
+        <ellipse cx={-headW * 0.5} cy={-headW * 0.4} rx={headW * 0.09} ry={headW * 0.08} fill="#c9a24a" />
+        <ellipse cx={-headW * 0.5} cy={headW * 0.4} rx={headW * 0.09} ry={headW * 0.08} fill="#c9a24a" />
+        <circle cx={-headW * 0.47} cy={-headW * 0.38} r={headW * 0.04} fill="#f3efe6" />
+        <circle cx={-headW * 0.47} cy={headW * 0.38} r={headW * 0.04} fill="#f3efe6" />
+        <ellipse cx={-headW * 1.92} cy={-headW * 0.07} rx={0.08} ry={0.05} fill="#1c1610" />
+        <ellipse cx={-headW * 1.92} cy={headW * 0.07} rx={0.08} ry={0.05} fill="#1c1610" />
+      </g>
+    </g>
   );
 }
 
@@ -115,39 +217,59 @@ function playDiceSound() {
   const AudioEngine = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const audio = new AudioEngine();
   const now = audio.currentTime;
-  const noiseBuffer = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.7), audio.sampleRate);
-  const samples = noiseBuffer.getChannelData(0);
+  const sr = audio.sampleRate;
+  const dur = 0.92;
+  const buf = audio.createBuffer(1, Math.floor(sr * dur), sr);
+  const samples = buf.getChannelData(0);
+  let brown = 0;
   for (let i = 0; i < samples.length; i += 1) {
-    const fade = 1 - i / samples.length;
-    samples[i] = (Math.random() * 2 - 1) * fade * (0.7 + Math.sin(i * 0.07) * 0.4);
+    const t = i / sr;
+    brown = (brown + (Math.random() * 2 - 1) * 0.02) * 0.986;
+    const tumble = 0.5 + 0.5 * Math.abs(Math.sin(t * 50 + Math.sin(t * 17) * 2));
+    samples[i] = (brown * 3.3 + (Math.random() * 2 - 1) * 0.22) * Math.pow(Math.max(0, 1 - t / dur), 0.42) * tumble;
   }
-  const tumble = audio.createBufferSource();
-  const filter = audio.createBiquadFilter();
-  const tumbleGain = audio.createGain();
-  tumble.buffer = noiseBuffer;
-  filter.type = "bandpass";
-  filter.frequency.setValueAtTime(780, now);
-  filter.frequency.exponentialRampToValueAtTime(260, now + 0.58);
-  filter.Q.value = 1.2;
-  tumbleGain.gain.setValueAtTime(0.18, now);
-  tumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
-  tumble.connect(filter).connect(tumbleGain).connect(audio.destination);
-  tumble.start(now);
-
-  [0.04, 0.14, 0.25, 0.37, 0.52].forEach((offset, index) => {
-    const knock = audio.createOscillator();
-    const knockGain = audio.createGain();
-    knock.type = "triangle";
-    knock.frequency.setValueAtTime(190 - index * 18, now + offset);
-    knock.frequency.exponentialRampToValueAtTime(75, now + offset + 0.07);
-    knockGain.gain.setValueAtTime(0.0001, now + offset);
-    knockGain.gain.exponentialRampToValueAtTime(index === 4 ? 0.2 : 0.11, now + offset + 0.006);
-    knockGain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.085);
-    knock.connect(knockGain).connect(audio.destination);
-    knock.start(now + offset);
-    knock.stop(now + offset + 0.09);
-  });
-  window.setTimeout(() => void audio.close(), 850);
+  const src = audio.createBufferSource();
+  const hp = audio.createBiquadFilter();
+  const bp = audio.createBiquadFilter();
+  const gain = audio.createGain();
+  src.buffer = buf;
+  hp.type = "highpass";
+  hp.frequency.value = 170;
+  bp.type = "bandpass";
+  bp.frequency.value = 920;
+  bp.Q.value = 0.7;
+  gain.gain.setValueAtTime(0.22, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  src.connect(hp).connect(bp).connect(gain).connect(audio.destination);
+  src.start(now);
+  const clack = (offset: number, pitch: number, vol: number) => {
+    const osc = audio.createOscillator();
+    const og = audio.createGain();
+    const lp = audio.createBiquadFilter();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(pitch, now + offset);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(70, pitch * 0.4), now + offset + 0.045);
+    lp.type = "lowpass";
+    lp.frequency.value = 1650;
+    og.gain.setValueAtTime(vol, now + offset);
+    og.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.055);
+    osc.connect(lp).connect(og).connect(audio.destination);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.07);
+    const nb = audio.createBuffer(1, Math.floor(sr * 0.028), sr);
+    const nd = nb.getChannelData(0);
+    for (let i = 0; i < nd.length; i += 1) nd[i] = (Math.random() * 2 - 1) * (1 - i / nd.length);
+    const ns = audio.createBufferSource();
+    const ng = audio.createGain();
+    ns.buffer = nb;
+    ng.gain.setValueAtTime(vol * 0.7, now + offset);
+    ng.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.03);
+    ns.connect(ng).connect(audio.destination);
+    ns.start(now + offset);
+  };
+  [0, 0.08, 0.16, 0.26, 0.38, 0.52, 0.68, 0.82].forEach((t, i) => clack(t, 200 + Math.random() * 130 - i * 8, 0.1 - i * 0.007));
+  clack(0.88, 86, 0.2);
+  window.setTimeout(() => void audio.close(), 1100);
 }
 
 export default function Home() {
@@ -334,8 +456,10 @@ export default function Home() {
               {board.map((n, i) => <div key={n} className={`cell c${(Math.floor(i / 10) + i) % 4}`}><span>{n}</span>{n === 100 && <b>★</b>}</div>)}
             </div>
             <div className="connectors">
-              {ladders.map(([a, b]) => <Connector key={`${a}-${b}`} from={a} to={b} type="ladder" />)}
-              {snakes.map(s => <Connector key={s.from} from={s.from} to={s.to} type="snake" color={s.color} />)}
+              {ladders.map(([a, b]) => <Connector key={`${a}-${b}`} from={a} to={b} />)}
+              <svg className="snakes-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                {snakes.map(s => <SnakeGraphic key={s.from} from={s.from} to={s.to} color={s.color} />)}
+              </svg>
               {positions.map((p, i) => {
                 const point = pointFor(p);
                 const motion = pawnMotion?.player === i ? pawnMotion.type : "";

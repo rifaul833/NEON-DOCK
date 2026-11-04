@@ -71,16 +71,6 @@
       "playUrl": "/games/bubbleshooter/"
     },
     {
-      "id": "popper",
-      "title": "Pop! Party",
-      "subtitle": "Tap bubbles, chain combos, dodge bombs",
-      "category": "Arcade",
-      "controls": "Mouse / Touch",
-      "accent": "#ff6bcb",
-      "cover": "/covers/popper.png",
-      "playUrl": "/games/popper/"
-    },
-    {
       "id": "highhills",
       "title": "Summit Rush",
       "subtitle": "Flip, boost, and climb endless hill tracks",

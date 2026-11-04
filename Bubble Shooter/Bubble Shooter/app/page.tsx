@@ -301,13 +301,12 @@ export default function Home() {
       ctx.clearRect(0, 0, width, height);
 
       ctx.save();
-      ctx.strokeStyle = "rgba(255,252,210,.95)";
-      ctx.lineWidth = Math.max(5, radius * .28);
-      ctx.setLineDash([radius * .5, radius * .22]);
-      ctx.lineCap = "round";
+      ctx.strokeStyle = "rgba(255, 255, 255, .72)";
+      ctx.lineWidth = Math.max(2.5, radius * .16);
+      ctx.setLineDash([4, 6]);
+      ctx.lineCap = "butt";
       ctx.lineJoin = "round";
-      ctx.shadowColor = "rgba(255,236,120,.75)";
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       const wallL = radius, wallR = width - radius, step = radius * .22;
       let px = width / 2, py = cannonY, vx = aimRef.current.x, vy = aimRef.current.y;
@@ -329,11 +328,11 @@ export default function Home() {
       ctx.setLineDash([]);
       ctx.shadowBlur = 0;
       for (const bounce of bouncePts) {
-        ctx.fillStyle = "#fff6b0";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 2.5;
+        ctx.fillStyle = "rgba(255, 255, 255, .55)";
+        ctx.strokeStyle = "rgba(255, 255, 255, .7)";
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(bounce.x, bounce.y, Math.max(5, radius * .3), 0, TAU);
+        ctx.arc(bounce.x, bounce.y, Math.max(2.5, radius * .14), 0, TAU);
         ctx.fill();
         ctx.stroke();
       }
