@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+const GAMEBOX_BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +35,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Script src={`${GAMEBOX_BASE}/gamebox/vendor/pako.min.js`} strategy="beforeInteractive" />
+        <Script src={`${GAMEBOX_BASE}/gamebox/crypto.js`} strategy="beforeInteractive" />
+        <Script src={`${GAMEBOX_BASE}/gamebox/gamebox-sdk.js`} strategy="beforeInteractive" />
+        <Script src={`${GAMEBOX_BASE}/gamebox/integration-core.js`} strategy="beforeInteractive" />
+        <Script src={`${GAMEBOX_BASE}/gamebox/integration.js`} strategy="beforeInteractive" />
+        <Script src={`${GAMEBOX_BASE}/gamebox/bootstrap.js`} strategy="beforeInteractive" />
       </body>
     </html>
   );

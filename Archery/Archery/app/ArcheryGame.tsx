@@ -3,7 +3,34 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-type GameMode = "solo" | "room";
+type GameMode = "solo" | "room" | "online";
+
+declare global {
+  interface Window {
+    GameBox?: {
+      getLaunchData?: () => {
+        displayName?: string;
+        userName?: string;
+        userId?: string;
+      } | null;
+      isOnlineSession?: () => boolean;
+    };
+    GameBoxIntegration?: {
+      startOnlineMatch?: () => Promise<unknown>;
+      submitGameResult?: (payload: {
+        isWinner: boolean;
+        score: number;
+        reason?: string;
+        stats?: Record<string, unknown>;
+      }) => Promise<unknown>;
+    };
+    __gameboxSession?: {
+      active?: boolean;
+      matchActive?: boolean;
+      opponent?: { username?: string; userId?: string; isbot?: boolean };
+    };
+  }
+}
 type ShotResult = { points: number; label: string };
 type RoomMessage = { type: "hello" | "shot" | "restart"; name: string; score: number; arrows: number };
 
@@ -73,6 +100,9 @@ export default function ArcheryGame() {
   const [level, setLevel] = useState(1);
   const [hitsInLevel, setHitsInLevel] = useState(0);
   const [levelPulse, setLevelPulse] = useState(false);
+  const [gameboxOnline, setGameboxOnline] = useState(false);
+  const [onlineBusy, setOnlineBusy] = useState(false);
+  const submittedRef = useRef(false);
   const drawStart = useRef(0);
 
   useEffect(() => { scoreRef.current = score; }, [score]);
@@ -877,7 +907,21 @@ export default function ArcheryGame() {
     setRoom(code);
     setScore(0);
     setArrows(0);
-    setOpponent({ name: selectedMode === "room" ? "Waiting…" : "Forest AI", score: 0, arrows: 0 });
+    if (!continueProgress) submittedRef.current = false;
+    const launch = typeof window !== "undefined" ? window.GameBox?.getLaunchData?.() : null;
+    if (launch?.displayName || launch?.userName) {
+      setName(String(launch.displayName || launch.userName).slice(0, 16));
+    }
+    if (selectedMode === "online") {
+      const rival = window.__gameboxSession?.opponent;
+      setOpponent({
+        name: rival?.username || (rival?.isbot ? "Rival Bot" : "Opponent"),
+        score: 0,
+        arrows: 0,
+      });
+    } else {
+      setOpponent({ name: selectedMode === "room" ? "Waiting…" : "Forest AI", score: 0, arrows: 0 });
+    }
     setLastShot(null);
     if (!continueProgress) {
       levelRef.current = 1;
@@ -898,6 +942,52 @@ export default function ArcheryGame() {
     setScreen("game");
     startMusic();
     if (selectedMode === "room") connectRoom(code);
+  };
+  const startGameRef = useRef(startGame);
+  startGameRef.current = startGame;
+
+  useEffect(() => {
+    const syncSession = () => {
+      const data = window.GameBox?.getLaunchData?.();
+      const active = !!(window.__gameboxSession?.active || window.GameBox?.isOnlineSession?.() || data?.userId);
+      setGameboxOnline(active);
+      const playerName = data?.displayName || data?.userName;
+      if (playerName) setName(String(playerName).slice(0, 16));
+    };
+    syncSession();
+    const id = window.setInterval(syncSession, 400);
+    const stop = window.setTimeout(() => window.clearInterval(id), 8000);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(stop);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onMatch = (event: Event) => {
+      const detail = (event as CustomEvent).detail || {};
+      const rival = detail.opponent || window.__gameboxSession?.opponent;
+      if (rival) {
+        window.__gameboxSession = window.__gameboxSession || {};
+        window.__gameboxSession.opponent = rival;
+      }
+      setOnlineBusy(false);
+      startGameRef.current("online");
+    };
+    window.addEventListener("gamebox:match-ready", onMatch);
+    return () => window.removeEventListener("gamebox:match-ready", onMatch);
+  }, []);
+
+  const playOnline = async () => {
+    if (onlineBusy || !window.GameBoxIntegration?.startOnlineMatch) return;
+    setOnlineBusy(true);
+    try {
+      await window.GameBoxIntegration.startOnlineMatch();
+    } catch {
+      /* overlay in GameBoxIntegration shows the error */
+    } finally {
+      setOnlineBusy(false);
+    }
   };
 
   const fire = useCallback((clientX: number, clientY: number) => {
@@ -1165,8 +1255,20 @@ export default function ArcheryGame() {
     if (incoming) { setRoom(incoming.toUpperCase()); setMode("room"); }
   }, []);
 
-  const opponentScore = mode === "solo" ? Math.min(76, Math.round((arrows / MAX_ARROWS) * 55)) : opponent.score;
+  const opponentScore = mode === "room" ? opponent.score : Math.min(76, Math.round((arrows / MAX_ARROWS) * 55));
   const won = score >= opponentScore;
+
+  useEffect(() => {
+    if (screen !== "results" || mode !== "online" || submittedRef.current) return;
+    if (!window.__gameboxSession?.matchActive) return;
+    submittedRef.current = true;
+    void window.GameBoxIntegration?.submitGameResult?.({
+      isWinner: won,
+      score,
+      reason: "completed",
+      stats: { level, arrows, opponent: opponent.name },
+    });
+  }, [screen, mode, won, score, level, arrows, opponent.name]);
 
   return (
     <main className="game-shell" onPointerMove={pointerMove}>
@@ -1207,8 +1309,13 @@ export default function ArcheryGame() {
               <span>Leave blank to create</span>
             </div>
           )}
-          <button className="primary-button" onClick={() => startGame(mode)}>{mode === "solo" ? "BEGIN THE TRIAL" : room ? "JOIN THE RANGE" : "CREATE A RANGE"}<span>→</span></button>
-          <div className="lobby-meta"><span>◆ 3D WEBGL</span><span>◆ TOUCH READY</span><span>◆ LIVE ROOMS</span></div>
+          <button className="primary-button" onClick={() => startGame(mode === "online" ? "solo" : mode)}>{mode === "solo" || mode === "online" ? "BEGIN THE TRIAL" : room ? "JOIN THE RANGE" : "CREATE A RANGE"}<span>→</span></button>
+          {gameboxOnline && (
+            <button className="primary-button gamebox-button" onClick={playOnline} disabled={onlineBusy}>
+              {onlineBusy ? "FINDING OPPONENT…" : "PLAY ONLINE (GAMEBOX)"}<span>⚡</span>
+            </button>
+          )}
+          <div className="lobby-meta"><span>◆ 3D WEBGL</span><span>◆ TOUCH READY</span><span>◆ {gameboxOnline ? "GAMEBOX" : "LIVE ROOMS"}</span></div>
         </section>
       )}
 
@@ -1217,7 +1324,7 @@ export default function ArcheryGame() {
           <aside className="scoreboard">
             <div className="player active"><span className="avatar">{name.slice(0, 1).toUpperCase()}</span><span><small>YOU</small><b>{name}</b></span><strong>{score}</strong></div>
             <div className="versus">VS</div>
-            <div className="player"><span className="avatar rival">{opponent.name.slice(0, 1).toUpperCase()}</span><span><small>{mode === "room" ? "RIVAL" : "FOREST AI"}</small><b>{opponent.name}</b></span><strong>{opponentScore}</strong></div>
+            <div className="player"><span className="avatar rival">{opponent.name.slice(0, 1).toUpperCase()}</span><span><small>{mode === "room" ? "RIVAL" : mode === "online" ? "ONLINE" : "FOREST AI"}</small><b>{opponent.name}</b></span><strong>{opponentScore}</strong></div>
             {mode === "room" && <button className="invite-button" onClick={copyInvite}>{copied ? "INVITE COPIED" : `INVITE · ${room}`}</button>}
           </aside>
           <div className="distance"><small>FLOATING BALLOON</small><strong>38</strong><span>FEET AWAY</span></div>
@@ -1246,7 +1353,7 @@ export default function ArcheryGame() {
 
       {screen === "results" && (
         <section className="results-panel">
-          <p className="eyebrow">{mode === "solo" ? "SOLO TRIAL COMPLETE" : "MULTIPLAYER MATCH COMPLETE"}</p>
+          <p className="eyebrow">{mode === "solo" ? "SOLO TRIAL COMPLETE" : mode === "online" ? "GAMEBOX MATCH COMPLETE" : "MULTIPLAYER MATCH COMPLETE"}</p>
           <div className="result-mark">{mode === "solo" || won ? "★" : "☆"}</div>
           <h2>{mode === "solo" ? (score >= 40 ? "Amazing shooting!" : score >= 20 ? "Great effort!" : "Keep aiming!") : won ? "You won the match!" : `${opponent.name} wins this round!`}</h2>
           <p>{mode === "solo" ? `You completed the trial with ${score} points. Keep popping balloons to climb all five levels!` : won ? "Your focus held when it mattered most." : "Good match! Take another shot and try for the next win."}</p>
