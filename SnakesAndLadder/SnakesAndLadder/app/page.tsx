@@ -179,18 +179,14 @@ function SnakeGraphic({ from, to, color }: { from: number; to: number; color: st
 }
 
 function Dice({ value, rolling }: { value: number; rolling: boolean }) {
-  const dots: Record<number, number[]> = {
-    1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
-  };
-  const face = (number: number, className: string) => (
-    <div className={`dice-face ${className}`}>
-      {Array.from({ length: 9 }, (_, i) => <span key={i} className={dots[number].includes(i) ? "dot" : ""} />)}
-    </div>
-  );
   return (
-    <div className={`dice-wrap ${rolling ? "rolling" : ""}`} aria-label={`Dice shows ${value}`}>
-      <div className="dice dice-flat">
-        {face(value, "face-front")}
+    <div className="die-scene" aria-label={`Dice shows ${value}`}>
+      <div className={`die d${value || 1} ${rolling ? "rolling" : ""}`}>
+        {[1, 2, 3, 4, 5, 6].map((face) => (
+          <div key={face} className={`die-face f${face}`}>
+            {Array.from({ length: 9 }, (_, i) => <i key={i} />)}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -214,62 +210,9 @@ function playHopSound() {
 }
 
 function playDiceSound() {
-  const AudioEngine = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  const audio = new AudioEngine();
-  const now = audio.currentTime;
-  const sr = audio.sampleRate;
-  const dur = 0.92;
-  const buf = audio.createBuffer(1, Math.floor(sr * dur), sr);
-  const samples = buf.getChannelData(0);
-  let brown = 0;
-  for (let i = 0; i < samples.length; i += 1) {
-    const t = i / sr;
-    brown = (brown + (Math.random() * 2 - 1) * 0.02) * 0.986;
-    const tumble = 0.5 + 0.5 * Math.abs(Math.sin(t * 50 + Math.sin(t * 17) * 2));
-    samples[i] = (brown * 3.3 + (Math.random() * 2 - 1) * 0.22) * Math.pow(Math.max(0, 1 - t / dur), 0.42) * tumble;
-  }
-  const src = audio.createBufferSource();
-  const hp = audio.createBiquadFilter();
-  const bp = audio.createBiquadFilter();
-  const gain = audio.createGain();
-  src.buffer = buf;
-  hp.type = "highpass";
-  hp.frequency.value = 170;
-  bp.type = "bandpass";
-  bp.frequency.value = 920;
-  bp.Q.value = 0.7;
-  gain.gain.setValueAtTime(0.22, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-  src.connect(hp).connect(bp).connect(gain).connect(audio.destination);
-  src.start(now);
-  const clack = (offset: number, pitch: number, vol: number) => {
-    const osc = audio.createOscillator();
-    const og = audio.createGain();
-    const lp = audio.createBiquadFilter();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(pitch, now + offset);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(70, pitch * 0.4), now + offset + 0.045);
-    lp.type = "lowpass";
-    lp.frequency.value = 1650;
-    og.gain.setValueAtTime(vol, now + offset);
-    og.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.055);
-    osc.connect(lp).connect(og).connect(audio.destination);
-    osc.start(now + offset);
-    osc.stop(now + offset + 0.07);
-    const nb = audio.createBuffer(1, Math.floor(sr * 0.028), sr);
-    const nd = nb.getChannelData(0);
-    for (let i = 0; i < nd.length; i += 1) nd[i] = (Math.random() * 2 - 1) * (1 - i / nd.length);
-    const ns = audio.createBufferSource();
-    const ng = audio.createGain();
-    ns.buffer = nb;
-    ng.gain.setValueAtTime(vol * 0.7, now + offset);
-    ng.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.03);
-    ns.connect(ng).connect(audio.destination);
-    ns.start(now + offset);
-  };
-  [0, 0.08, 0.16, 0.26, 0.38, 0.52, 0.68, 0.82].forEach((t, i) => clack(t, 200 + Math.random() * 130 - i * 8, 0.1 - i * 0.007));
-  clack(0.88, 86, 0.2);
-  window.setTimeout(() => void audio.close(), 1100);
+  const clip = new Audio("/dice-roll.mp3");
+  clip.currentTime = 0;
+  void clip.play();
 }
 
 export default function Home() {
@@ -335,12 +278,7 @@ export default function Home() {
     playDiceSound();
     setRolling(true);
     setMessage("Wheee… rolling!");
-    let ticks = 0;
-    const spin = window.setInterval(() => {
-      setDice(Math.floor(Math.random() * 6) + 1);
-      ticks += 1;
-      if (ticks < 7) return;
-      window.clearInterval(spin);
+    window.setTimeout(() => {
       const value = Math.floor(Math.random() * 6) + 1;
       setDice(value);
       setRolling(false);
@@ -408,7 +346,7 @@ export default function Home() {
         else finishMove(start + value);
       };
       window.setTimeout(advance, 80);
-    }, 90);
+    }, 960);
   }, [moving, positions, rolling, turn, winner]);
 
   useEffect(() => {

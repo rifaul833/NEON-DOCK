@@ -83,16 +83,17 @@ function clampToLegal(discs: Disc[], lane: Lane, value: number): number | null {
   return best;
 }
 
-function setStrikerOnLane(striker: Disc, discs: Disc[], lane: Lane, along: number) {
+function setStrikerOnLane(striker: Disc, discs: Disc[], lane: Lane, along: number, force = false) {
   const legal = clampToLegal(discs, lane, along);
-  if (legal == null) return false;
+  const value = legal ?? (force ? Math.max(LINE_MIN, Math.min(LINE_MAX, along)) : null);
+  if (value == null) return false;
   const { axis, fixed } = LANE_POS[lane];
   if (axis === "x") {
-    striker.x = legal;
+    striker.x = value;
     striker.y = fixed;
   } else {
     striker.x = fixed;
-    striker.y = legal;
+    striker.y = value;
   }
   return true;
 }
@@ -101,23 +102,8 @@ function homeLane(side: "you" | "milo"): Lane {
   return side === "you" ? "south" : "north";
 }
 
-function pickClearLane(discs: Disc[], side: "you" | "milo"): Lane {
-  const home = homeLane(side);
-  if (legalGaps(discs, home).length) return home;
-  const west = legalGaps(discs, "west").reduce((s, [a, b]) => s + (b - a), 0);
-  const east = legalGaps(discs, "east").reduce((s, [a, b]) => s + (b - a), 0);
-  if (east > west && legalGaps(discs, "east").length) return "east";
-  if (legalGaps(discs, "west").length) return "west";
-  if (legalGaps(discs, "east").length) return "east";
-  return home;
-}
-
-function laneFromPoint(point: { x: number; y: number }, allowSides: boolean): Lane | null {
-  const onSouth = point.y >= 590 && point.y <= 740 && point.x >= 165 && point.x <= 635;
-  if (onSouth && point.x >= 200 && point.x <= 600) return "south";
-  if (allowSides && point.x >= 70 && point.x <= 220 && point.y >= 170 && point.y <= 630) return "west";
-  if (allowSides && point.x >= 580 && point.x <= 730 && point.y >= 170 && point.y <= 630) return "east";
-  if (onSouth) return "south";
+function laneFromPoint(point: { x: number; y: number }): Lane | null {
+  if (point.y >= 590 && point.y <= 740 && point.x >= 165 && point.x <= 635) return "south";
   return null;
 }
 
@@ -138,6 +124,7 @@ const TOKEN_POINTS: Record<Disc["kind"], number> = {
   striker: 0,
 };
 const SHOT_SECONDS = 30;
+const BASELINE_FOUL = 10;
 
 function makeDiscs(): Disc[] {
   const discs: Disc[] = [];
@@ -186,6 +173,8 @@ export function CarromGame() {
   const musicStepRef = useRef(0);
   const pocketedThisShot = useRef(0);
   const strikerFoulRef = useRef(false);
+  const baselineFoulRef = useRef(false);
+  const baselineCoinIdsRef = useRef<Set<number>>(new Set());
   const expireTurnRef = useRef(false);
   const strikerLaneRef = useRef<Lane>("south");
   const [shotLeft, setShotLeft] = useState(SHOT_SECONDS);
@@ -291,6 +280,8 @@ export function CarromGame() {
     interactionRef.current = null;
     pocketedThisShot.current = 0;
     strikerFoulRef.current = false;
+    baselineFoulRef.current = false;
+    baselineCoinIdsRef.current = new Set();
     expireTurnRef.current = false;
     strikerLaneRef.current = "south";
     setShotLeft(SHOT_SECONDS);
@@ -588,27 +579,21 @@ export function CarromGame() {
       const striker = discsRef.current.find((d) => d.kind === "striker" && d.active);
       if (!striker) return;
       const discs = discsRef.current;
-      const southOpen = legalGaps(discs, "south");
-      const allowSides = !southOpen.length || coinsOnLane(discs, "south").length > 0;
-      const lanes: Lane[] = allowSides && !southOpen.length ? ["west", "east"] : ["south"];
-      if (allowSides && southOpen.length) lanes.push("west", "east");
       ctx.save();
       ctx.strokeStyle = "rgba(243, 230, 200, .55)";
       ctx.lineWidth = 4;
       ctx.setLineDash([9, 9]);
-      for (const lane of lanes) {
-        const { axis, fixed } = LANE_POS[lane];
-        for (const [a, b] of legalGaps(discs, lane)) {
-          ctx.beginPath();
-          if (axis === "x") {
-            ctx.moveTo(a, fixed + 32);
-            ctx.lineTo(b, fixed + 32);
-          } else {
-            ctx.moveTo(fixed + (lane === "west" ? -32 : 32), a);
-            ctx.lineTo(fixed + (lane === "west" ? -32 : 32), b);
-          }
-          ctx.stroke();
+      const { axis, fixed } = LANE_POS.south;
+      for (const [a, b] of legalGaps(discs, "south")) {
+        ctx.beginPath();
+        if (axis === "x") {
+          ctx.moveTo(a, fixed + 32);
+          ctx.lineTo(b, fixed + 32);
+        } else {
+          ctx.moveTo(fixed, a);
+          ctx.lineTo(fixed, b);
         }
+        ctx.stroke();
       }
       ctx.setLineDash([]);
       if (interactionRef.current?.mode === "position") {
@@ -645,6 +630,12 @@ export function CarromGame() {
       const dist = Math.hypot(dx, dy) || 0.0001;
       const minDistance = a.r + b.r + 1.2;
       if (dist >= minDistance) return;
+      if (phaseRef.current === "moving" && !baselineFoulRef.current) {
+        const token = a.kind === "striker" ? b : b.kind === "striker" ? a : null;
+        if (token && token.kind !== "striker" && baselineCoinIdsRef.current.has(token.id)) {
+          baselineFoulRef.current = true;
+        }
+      }
       const nx = dx / dist;
       const ny = dy / dist;
       const ma = massOf(a);
@@ -774,12 +765,9 @@ export function CarromGame() {
       striker.active = true;
       striker.vx = 0;
       striker.vy = 0;
-      const lane = pickClearLane(discsRef.current, side);
+      const lane = homeLane(side);
       strikerLaneRef.current = lane;
-      if (!setStrikerOnLane(striker, discsRef.current, lane, 400)) {
-        striker.x = LANE_POS[lane].axis === "x" ? 400 : LANE_POS[lane].fixed;
-        striker.y = LANE_POS[lane].axis === "y" ? 400 : LANE_POS[lane].fixed;
-      }
+      setStrikerOnLane(striker, discsRef.current, lane, 400, true);
     };
 
     const aiShoot = () => {
@@ -795,6 +783,8 @@ export function CarromGame() {
       phaseRef.current = "moving";
       pocketedThisShot.current = 0;
       strikerFoulRef.current = false;
+      baselineFoulRef.current = false;
+      baselineCoinIdsRef.current = new Set(coinsOnLane(discsRef.current, homeLane("milo")).map((d) => d.id));
       setMessage("Milo takes a cheeky shot…");
       ping(330, 0.08);
     };
@@ -807,7 +797,12 @@ export function CarromGame() {
         return;
       }
       const scored = pocketedThisShot.current > 0;
-      const foul = strikerFoulRef.current;
+      const baselineFoul = baselineFoulRef.current;
+      const foul = strikerFoulRef.current || baselineFoul;
+      if (baselineFoul) {
+        if (turn === "you") setPlayerScore((v) => v - BASELINE_FOUL);
+        else setAiScore((v) => v - BASELINE_FOUL);
+      }
       if (scored && !foul) {
         placeStriker(turn);
         phaseRef.current = turn === "you" ? "player" : "ai";
@@ -821,13 +816,13 @@ export function CarromGame() {
         placeStriker("milo");
         setTurn("milo");
         phaseRef.current = "ai";
-        setMessage(foul ? "Striker foul. Milo to play." : "Milo is lining up…");
+        setMessage(baselineFoul ? `Baseline foul (−${BASELINE_FOUL}). Milo to play.` : foul ? "Striker foul. Milo to play." : "Milo is lining up…");
         window.setTimeout(aiShoot, 700);
       } else {
         placeStriker("you");
         setTurn("you");
         phaseRef.current = "player";
-        setMessage(foul ? "Milo fouled. Your shot." : "Your turn — place, aim, and strike.");
+        setMessage(baselineFoul ? `Milo baseline foul (−${BASELINE_FOUL}). Your shot.` : foul ? "Milo fouled. Your shot." : "Your turn — place, aim, and strike.");
       }
     };
 
@@ -891,10 +886,9 @@ export function CarromGame() {
     const striker = discsRef.current.find((d) => d.kind === "striker" && d.active);
     if (!striker) return;
     const onStriker = Math.hypot(point.x - striker.x, point.y - striker.y) <= 65;
-    const allowSides = !legalGaps(discsRef.current, "south").length || coinsOnLane(discsRef.current, "south").length > 0;
-    const lane = onStriker ? strikerLaneRef.current : laneFromPoint(point, allowSides);
+    const lane = onStriker ? "south" : laneFromPoint(point);
     if (!onStriker && !lane) return;
-    const useLane = lane || strikerLaneRef.current;
+    const useLane = "south";
     event.currentTarget.setPointerCapture(event.pointerId);
     interactionRef.current = {
       mode: onStriker ? "pending" : "position",
@@ -908,14 +902,14 @@ export function CarromGame() {
       const along = LANE_POS[lane].axis === "x" ? point.x : point.y;
       if (!setStrikerOnLane(striker, discsRef.current, lane, along)) {
         interactionRef.current = null;
-        setMessage("That spot is occupied. Place left or right of the coin — or use a side line.");
+        setMessage("That spot is occupied. Place left or right of the coin on your line.");
         return;
       }
       strikerLaneRef.current = lane;
       interactionRef.current.strikerX = striker.x;
       interactionRef.current.strikerY = striker.y;
       setMessage(coinsOnLane(discsRef.current, "south").length
-        ? "Coin on the baseline — place left or right of it, then aim."
+        ? "Coin on your line — place beside it. Hitting it is a −10 foul."
         : "Great angle! Slide to fine-tune, then drag from the striker to shoot.");
     } else {
       setMessage("Slide to a free spot — or pull away to aim.");
@@ -946,8 +940,8 @@ export function CarromGame() {
       strikerLaneRef.current = lane;
       pointerRef.current = null;
       setMessage(coinsOnLane(discsRef.current, lane).length
-        ? "Keep the striker off the coin — play from the left or right."
-        : "Move along the line to choose your angle.");
+        ? "Stay on your baseline — do not strike the coin on the line."
+        : "Move along your line to choose your angle.");
     } else if (interaction.mode === "aim") {
       pointerRef.current = point;
     }
@@ -982,6 +976,8 @@ export function CarromGame() {
     phaseRef.current = "moving";
     pocketedThisShot.current = 0;
     strikerFoulRef.current = false;
+    baselineFoulRef.current = false;
+    baselineCoinIdsRef.current = new Set(coinsOnLane(discsRef.current, homeLane("you")).map((d) => d.id));
     setMessage("Kaboom! Watch it roll…");
     ping(360, 0.08);
   };
@@ -1040,7 +1036,7 @@ export function CarromGame() {
       </section>
 
       <footer>
-        <span>Queen 50</span><b>•</b><span>White 20</span><b>•</b><span>Black 10</span><b>•</b><span>Pocket = extra shot</span><b>•</b><span>Striker in = foul</span>
+        <span>Queen 50</span><b>•</b><span>White 20</span><b>•</b><span>Black 10</span><b>•</b><span>Pocket = extra shot</span><b>•</b><span>Striker in = foul</span><b>•</b><span>Hit coin on your line = −10</span>
       </footer>
     </main>
   );

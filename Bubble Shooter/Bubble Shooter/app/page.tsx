@@ -301,7 +301,7 @@ export default function Home() {
       ctx.clearRect(0, 0, width, height);
 
       ctx.save();
-      ctx.strokeStyle = "rgba(255, 255, 255, .72)";
+      ctx.strokeStyle = "rgba(40, 40, 40, .45)";
       ctx.lineWidth = Math.max(2.5, radius * .16);
       ctx.setLineDash([4, 6]);
       ctx.lineCap = "butt";
@@ -328,8 +328,8 @@ export default function Home() {
       ctx.setLineDash([]);
       ctx.shadowBlur = 0;
       for (const bounce of bouncePts) {
-        ctx.fillStyle = "rgba(255, 255, 255, .55)";
-        ctx.strokeStyle = "rgba(255, 255, 255, .7)";
+        ctx.fillStyle = "rgba(40, 40, 40, .4)";
+        ctx.strokeStyle = "rgba(40, 40, 40, .5)";
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(bounce.x, bounce.y, Math.max(2.5, radius * .14), 0, TAU);
