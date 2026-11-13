@@ -209,8 +209,10 @@ function playHopSound() {
   window.setTimeout(() => void audio.close(), 180);
 }
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 function playDiceSound() {
-  const clip = new Audio("/dice-roll.mp3");
+  const clip = new Audio(`${BASE_PATH}/dice-roll.mp3`);
   clip.currentTime = 0;
   void clip.play();
 }

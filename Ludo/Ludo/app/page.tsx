@@ -30,6 +30,8 @@ type TokenStyle = "classic" | "pawn" | "ring" | "crown";
 const TOKEN_STYLES: TokenStyle[] = ["classic", "pawn", "ring", "crown"];
 const defaultLooks = (): TokenStyle[] => ["pawn", "classic", "ring", "crown"];
 const HOP_MS = 210;
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const DICE_SOUND = `${BASE_PATH}/dice-roll.mp3`;
 
 export default function Home(){
   const canvasRef=useRef<HTMLCanvasElement>(null); const audioRef=useRef<AudioContext|null>(null); const musicTimer=useRef<ReturnType<typeof setInterval>|null>(null);
@@ -48,7 +50,7 @@ export default function Home(){
 
   const tone=useCallback((freq:number,duration:number,type:OscillatorType="sine",volume=.035,delay=0)=>{const ctx=audioRef.current;if(!ctx||ctx.state!=="running")return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(freq,ctx.currentTime+delay);g.gain.setValueAtTime(volume,ctx.currentTime+delay);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+delay+duration);o.connect(g).connect(ctx.destination);o.start(ctx.currentTime+delay);o.stop(ctx.currentTime+delay+duration);},[]);
   const playDiceSound=useCallback(()=>{
-    const clip=new Audio("/dice-roll.mp3");
+    const clip=new Audio(DICE_SOUND);
     clip.currentTime=0;
     void clip.play();
   },[]);
