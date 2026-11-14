@@ -199,6 +199,17 @@ const GAMES = [
   },
 ];
 
+// Display metadata comes from the same catalog the static site ships.
+const catalog = (() => {
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(PUBLIC, "games.json"), "utf8"));
+    const list = Array.isArray(data) ? data : data.games;
+    return new Map((list || []).map((game) => [game.id, game]));
+  } catch {
+    return new Map();
+  }
+})();
+
 /** @type {Map<string, { child: import('node:child_process').ChildProcess | null, status: 'stopped' | 'starting' | 'running' | 'error', error?: string, startedAt?: number }>} */
 const processes = new Map();
 /** Currently focused game for one-at-a-time play */
@@ -517,13 +528,14 @@ async function snapshot() {
       if (open) status = "running";
       else if (status === "running") status = "starting";
     }
+    const meta = catalog.get(game.id) || {};
     list.push({
       id: game.id,
-      title: game.title,
-      subtitle: game.subtitle,
-      category: game.category,
-      controls: game.controls,
-      accent: game.accent,
+      title: meta.title ?? game.title,
+      subtitle: meta.subtitle ?? game.subtitle,
+      category: meta.category ?? game.category,
+      controls: meta.controls ?? game.controls,
+      accent: meta.accent ?? game.accent,
       port: game.port,
       status,
       error: state?.error,
@@ -736,11 +748,6 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 server.listen(LAUNCHER_PORT, "127.0.0.1", () => {
-  const catalogSrc = path.join(ROOT, "public", "games.json");
-  const catalogDest = path.join(PUBLIC, "games.json");
-  if (fs.existsSync(catalogSrc)) {
-    fs.copyFileSync(catalogSrc, catalogDest);
-  }
   console.log(`\n  NEON DOCK`);
   console.log(`  → http://127.0.0.1:${LAUNCHER_PORT}\n`);
   console.log(`  Click a card to play. Switching games auto-stops the previous one.`);

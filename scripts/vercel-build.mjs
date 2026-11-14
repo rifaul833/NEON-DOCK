@@ -2,6 +2,9 @@
 /**
  * Builds a static site for Vercel from the local NEON DOCK launcher
  * plus prebuilt static game exports in static-games/.
+ *
+ * launcher/public/games.json is the single source of truth for the catalog.
+ * Any edit there (add/remove/reorder/rename a card) ships on the next push.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -11,6 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUT = path.join(ROOT, "public");
 const STATIC_GAMES = path.join(ROOT, "static-games");
+const CATALOG = path.join(ROOT, "launcher", "public", "games.json");
 
 function rmrf(p) {
   fs.rmSync(p, { recursive: true, force: true });
@@ -29,6 +33,39 @@ function copyDir(src, dest) {
     if (entry.isDirectory()) copyDir(from, to);
     else fs.copyFileSync(from, to);
   }
+}
+
+function readCatalog() {
+  if (!fs.existsSync(CATALOG)) {
+    console.error(`Missing catalog: ${path.relative(ROOT, CATALOG)}`);
+    process.exit(1);
+  }
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(CATALOG, "utf8"));
+  } catch (error) {
+    console.error(`Invalid catalog JSON in ${path.relative(ROOT, CATALOG)}: ${error.message}`);
+    process.exit(1);
+  }
+  const games = Array.isArray(data) ? data : data.games;
+  if (!Array.isArray(games) || games.length === 0) {
+    console.error(`Catalog ${path.relative(ROOT, CATALOG)} contains no games.`);
+    process.exit(1);
+  }
+  return games;
+}
+
+function outputPathFor(url) {
+  const clean = String(url).split(/[?#]/)[0].replace(/^\/+/, "");
+  return path.join(OUT, clean);
+}
+
+function playUrlExists(url) {
+  const target = outputPathFor(url);
+  if (!url.endsWith("/") && fs.existsSync(target) && fs.statSync(target).isFile()) return true;
+  if (fs.existsSync(path.join(target, "index.html"))) return true;
+  if (fs.existsSync(`${target}.html`)) return true;
+  return fs.existsSync(target) && fs.statSync(target).isFile();
 }
 
 rmrf(OUT);
@@ -73,138 +110,7 @@ for (const id of fs.readdirSync(STATIC_GAMES)) {
   console.log(`packed game: ${id}`);
 }
 
-const catalog = [
-  {
-    id: "archery",
-    title: "Arrowfall",
-    subtitle: "3D archery — draw, aim, and hit the mark",
-    category: "Shooter",
-    controls: "Mouse / Touch",
-    accent: "#e8a54b",
-    cover: "/covers/archery.jpg",
-    playUrl: "/games/archery/",
-  },
-  {
-    id: "candyblast",
-    title: "CandyBlast",
-    subtitle: "Match-3 puzzles in a glossy candy kingdom",
-    category: "Puzzle",
-    controls: "Mouse / Touch",
-    accent: "#ff6b9d",
-    cover: "/covers/candyblast.png",
-    playUrl: "/games/candyblast/",
-  },
-  {
-    id: "carrom",
-    title: "Carrom Pop!",
-    subtitle: "Cartoon carrom — flick and pocket the pieces",
-    category: "Arcade",
-    controls: "Mouse / Touch",
-    accent: "#f0c14b",
-    cover: "/covers/carrom.png",
-    playUrl: "/games/carrom/",
-  },
-  {
-    id: "darts",
-    title: "Dart Dash!",
-    subtitle: "Cartoon darts — throw for the bullseye",
-    category: "Arcade",
-    controls: "Mouse / Touch",
-    accent: "#ff5a5a",
-    cover: "/covers/darts.png",
-    playUrl: "/games/darts/",
-  },
-  {
-    id: "snakes",
-    title: "Snake & Ladder",
-    subtitle: "Race to the top — climb ladders or slide down",
-    category: "Board",
-    controls: "Mouse / Touch",
-    accent: "#5ad4ff",
-    cover: "/covers/snakes.png",
-    playUrl: "/games/snakes/",
-  },
-  {
-    id: "ludo",
-    title: "Ludo",
-    subtitle: "3D board race — roll, capture, and get all pieces home",
-    category: "Board",
-    controls: "Mouse / Touch",
-    accent: "#ffb347",
-    cover: "/covers/ludo.png",
-    playUrl: "/games/ludo/",
-  },
-  {
-    id: "bubbleshooter",
-    title: "Bubble Boom!",
-    subtitle: "3D bubble shooter — aim, bounce, and pop",
-    category: "Puzzle",
-    controls: "Mouse / Touch",
-    accent: "#5ec8ff",
-    cover: "/covers/bubbleshooter.png",
-    playUrl: "/games/bubbleshooter/",
-  },
-  {
-    id: "highhills",
-    title: "Summit Rush",
-    subtitle: "Flip, boost, and climb endless hill tracks",
-    category: "Racing",
-    controls: "Tap / Hold",
-    accent: "#7ad4ff",
-    cover: "/covers/highhills.jpg",
-    playUrl: "/games/highhills/game/index.html",
-  },
-  {
-    id: "shootingcar",
-    title: "Shooting Car",
-    subtitle: "Shoot, dodge, and outrun the chaos",
-    category: "Action",
-    controls: "Keyboard / Touch",
-    accent: "#ff5a36",
-    cover: "/covers/shootingcar.jpg",
-    playUrl: "/games/shootingcar/game/index.html",
-  },
-  {
-    id: "rushracing",
-    title: "Rush Racing",
-    subtitle: "Race through traffic at breakneck speed",
-    category: "Racing",
-    controls: "Keyboard / Touch",
-    accent: "#ffd24a",
-    cover: "/covers/rushracing.jpg",
-    playUrl: "/games/rushracing/game/index.html",
-  },
-  {
-    id: "driftking",
-    title: "Drift King",
-    subtitle: "Hold to turn right, release to turn left — drift to the top",
-    category: "Racing",
-    controls: "Hold / Release",
-    accent: "#ffb347",
-    cover: "/covers/driftking.jpg",
-    playUrl: "/games/driftking/game/index.html",
-  },
-  {
-    id: "8ball",
-    title: "8 Ball Billiards",
-    subtitle: "Classic 8-ball pool — aim, spin, and sink every ball",
-    category: "Sports",
-    controls: "Mouse / Touch",
-    accent: "#4aa3ff",
-    cover: "/covers/8ball.jpg",
-    playUrl: "/games/8ball/game/index.html",
-  },
-  {
-    id: "fallcars",
-    title: "Fall Cars",
-    subtitle: "Drive to the right color before the tiles fall away",
-    category: "Racing",
-    controls: "WASD / Arrows",
-    accent: "#ff6b35",
-    cover: "/covers/fallcars.jpg",
-    playUrl: "/games/fallcars/game/index.html",
-  },
-];
+const games = readCatalog();
 
 const extraCovers = [
   ["Archery/Archery/public/desert-sunset.jpg", "covers/archery.jpg"],
@@ -227,6 +133,36 @@ for (const [srcRel, destRel] of extraCovers) {
   }
 }
 
-fs.writeFileSync(path.join(OUT, "games.json"), JSON.stringify({ games: catalog }, null, 2));
+// Ship the catalog exactly as authored in launcher/public/games.json.
+fs.writeFileSync(path.join(OUT, "games.json"), `${JSON.stringify({ games }, null, 2)}\n`);
+
+const missingPlay = games.filter((game) => game.playUrl && !playUrlExists(game.playUrl));
+if (missingPlay.length) {
+  console.error("\nCatalog references playable games that were not built:");
+  for (const game of missingPlay) console.error(`  - ${game.id}: ${game.playUrl}`);
+  console.error("Add the game to scripts/build-static-games.mjs or fix the playUrl in launcher/public/games.json.");
+  process.exit(1);
+}
+
+const missingCovers = games.filter(
+  (game) => game.cover && !fs.existsSync(outputPathFor(game.cover)),
+);
+if (missingCovers.length) {
+  console.warn("\nWarning: catalog covers missing from the build:");
+  for (const game of missingCovers) console.warn(`  - ${game.id}: ${game.cover}`);
+}
+
+const commit = process.env.VERCEL_GIT_COMMIT_SHA || "";
+const buildInfo = {
+  commit,
+  shortCommit: commit ? commit.slice(0, 7) : "",
+  ref: process.env.VERCEL_GIT_COMMIT_REF || "",
+  environment: process.env.VERCEL_ENV || "local",
+  builtAt: new Date().toISOString(),
+  games: games.map((game) => game.id),
+};
+fs.writeFileSync(path.join(OUT, "build-info.json"), `${JSON.stringify(buildInfo, null, 2)}\n`);
+
 console.log(`Vercel static build ready → ${OUT}`);
-console.log(`Playable games: ${catalog.filter((g) => g.playUrl).length}`);
+console.log(`Playable games: ${games.filter((game) => game.playUrl).length}`);
+console.log(`Commit: ${buildInfo.shortCommit || "(local build)"}`);

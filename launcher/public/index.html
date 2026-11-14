@@ -413,7 +413,7 @@
   <div class="shell">
     <div class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true"></span> NEON DOCK</div>
-      <div class="top-meta"><span id="game-count">9</span> local games · one hub</div>
+      <div class="top-meta"><span id="game-count">9</span> local games · one hub <span id="build-info"></span></div>
     </div>
 
     <header class="hero">
@@ -543,7 +543,7 @@
 
     async function refreshQuiet() {
       try {
-        const res = await fetch("/api/games");
+        const res = await fetch("/api/games", { cache: "no-store" });
         const data = await res.json();
         for (const g of data.games || []) {
           const prev = games.get(g.id);
@@ -694,7 +694,7 @@
     });
 
     async function loadStaticCatalog() {
-      const res = await fetch("/games.json");
+      const res = await fetch("/games.json", { cache: "no-store" });
       if (!res.ok) throw new Error("Missing games.json");
       const data = await res.json();
       for (const g of data.games || []) {
@@ -711,7 +711,7 @@
     async function boot() {
       renderFilters();
       try {
-        const res = await fetch("/api/games");
+        const res = await fetch("/api/games", { cache: "no-store" });
         if (!res.ok) throw new Error("no api");
         const data = await res.json();
         for (const g of data.games || []) games.set(g.id, g);
@@ -720,6 +720,14 @@
         await loadStaticCatalog();
       }
       renderGrid();
+      fetch("/build-info.json", { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((info) => {
+          if (info?.shortCommit) {
+            document.getElementById("build-info").textContent = `· build ${info.shortCommit}`;
+          }
+        })
+        .catch(() => {});
     }
 
     window.addEventListener("message", (event) => {

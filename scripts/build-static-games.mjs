@@ -12,6 +12,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUT_ROOT = path.join(ROOT, "static-games");
 
+function readCatalog() {
+  try {
+    const file = path.join(ROOT, "launcher", "public", "games.json");
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    const list = Array.isArray(data) ? data : data.games;
+    return new Map((list || []).map((game) => [game.id, game]));
+  } catch {
+    return new Map();
+  }
+}
+
+const CATALOG = readCatalog();
+
 const GAMES = [
   { id: "archery", dir: "Archery/Archery", title: "Arrowfall — 3D Archery", description: "A cinematic multiplayer archery challenge built for the browser." },
   { id: "candyblast", dir: "CandyBlast/CandyBlast", title: "CandyBlast — Match, Pop & Smile", description: "A deliciously playful match-3 puzzle game in a glossy candy kingdom." },
@@ -108,10 +121,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 function ensureDeps(gameDir, gameId) {
   if (fs.existsSync(path.join(gameDir, "node_modules", "next"))) return false;
   console.log(`Installing deps for ${gameId}…`);
-  let install = spawnSync("npm", ["ci"], { cwd: gameDir, stdio: "inherit", env: process.env });
+  const installArgs = ["--no-audit", "--no-fund"];
+  let install = spawnSync("npm", ["ci", ...installArgs], { cwd: gameDir, stdio: "inherit", env: process.env });
   // Fall back to a normal install if the lockfile is out of sync.
   if (install.status !== 0) {
-    install = spawnSync("npm", ["install"], { cwd: gameDir, stdio: "inherit", env: process.env });
+    install = spawnSync("npm", ["install", ...installArgs], { cwd: gameDir, stdio: "inherit", env: process.env });
   }
   if (install.status !== 0) {
     throw new Error(`npm install failed for ${gameId}`);
@@ -136,7 +150,8 @@ function buildGame(game) {
     console.log(`\n=== Building ${game.id} (${basePath}) ===`);
     writeNextConfig(gameDir, basePath);
     writeDbStub(gameDir);
-    patchLayout(gameDir, game.title, game.description);
+    const meta = CATALOG.get(game.id) || {};
+    patchLayout(gameDir, meta.title ?? game.title, meta.subtitle ?? game.description);
 
     rmrf(path.join(gameDir, "out"));
     rmrf(path.join(gameDir, ".next"));
